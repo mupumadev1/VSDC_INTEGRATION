@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Inventory-Management-System-Spring-Boot-main/IMS-AP.iml" filepath="$PROJECT_DIR$/Inventory-Management-System-Spring-Boot-main/IMS-AP.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Inventory-Management-System-Spring-Boot-main.iml" filepath="$PROJECT_DIR$/.idea/Inventory-Management-System-Spring-Boot-main.iml" />
+    </modules>
+  </component>
+</project>

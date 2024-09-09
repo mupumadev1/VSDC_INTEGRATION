@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <div th:replace="header :: myHeader"></div>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Add jQuery for search functionality -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Bootstrap's select2 for searchable dropdown -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</head>
+<body class="sb-nav-fixed">
+<div th:replace="navbar :: myNavbar"></div>
+<div id="layoutSidenav">
+    <div th:replace="sidebar :: mySidebar"></div>
+
+    <div id="layoutSidenav_content">
+        <div class="container">
+            <br>
+            <hr>
+
+            <!-- Add a row with a column to position the form -->
+            <div class="row">
+                <div class="col d-flex align-items-start">
+                    <h2 class="text-center m-4">Import Information</h2>
+                </div>
+                <div class="col d-flex align-items-end justify-content-end">
+                    <form class="form-inline" th:action="@{/imports}" method="post" >
+                        <div class="input-group">
+                            <input class="form-control" name="refNumber" type="text" th:placeholder="${refNo}"
+                                   aria-label="Search" aria-describedby="basic-addon2" />
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit" id="import-submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <br><br>
+
+            <div class="table-responsive">
+
+
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>Task Code</th>
+                    <th>Declaration Date</th>
+                    <th>Declaration Number</th>
+                    <th>HS Code</th>
+                    <th>Item Name</th>
+                    <th>Package</th>
+                    <th>Quantity</th>
+                    <th>Total Weight</th>
+                    <th>Supplier Name</th>
+                    <th>Corresponding Sage Item</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Iterate over itemList from the model -->
+                <tr th:each="item : ${importData}">
+                    <td th:text="${item.taskCd}"></td>
+                    <td th:text="${item.dclDe}"></td>
+                    <td th:text="${item.dclNo}"></td>
+                    <td th:text="${item.hsCd}"></td>
+                    <td th:text="${item.itemNm}"></td>
+                    <td th:text="${item.pkg}"></td>
+                    <td th:text="${item.qty}"></td>
+                    <td th:text="${item.totWt}"></td>
+                    <td th:text="${item.spplrNm}"></td>
+                    <td>
+                        <select class="form-control sage-dropdown" name="sageItem" id="sageItem_${item.id}">
+                            <option value="" disabled selected>Select a Sage item...</option>
+                            <!-- Populate dropdown with 'sageItems' -->
+                            <option th:each="sageItem : ${sageItems}" th:value="${sageItem.itemno}" th:text="${sageItem.desc}">
+                            </option>
+                        </select>
+                    </td>
+                    <td><a class="btn btn-dark">Update</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        // Initialize select2 for all dropdowns
+        $('.sage-dropdown').select2({
+            placeholder: 'Select a Sage item...',
+            allowClear: true
+        });
+    });
+</script>
+</body>
+</html>
