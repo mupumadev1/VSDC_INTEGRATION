@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JpaBuddyIdeaProjectConfig" newRepositoryParent="org.springframework.data.jpa.repository.JpaRepository">
+    <option name="defaultUnitInitialized" value="true" />
+    <option name="reLastEntityCreationPackage" value="Inventory-Management-System-Spring-Boot-main/src/main/java/com/example/IMS/entity/mssql" />
+    <option name="renamerInitialized" value="true" />
+    <option name="reverseEngineeringLastDbConnectionId" value="0a0ff973-f1c9-4fdc-899f-c88b5b24806e__INFDAT_dbo" />
+  </component>
+</project>

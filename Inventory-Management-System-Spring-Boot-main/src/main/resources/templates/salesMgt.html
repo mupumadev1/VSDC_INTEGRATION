@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <div th:replace="header :: myHeader"></div>
+</head>
+<body class="sb-nav-fixed">
+<div th:replace="navbar :: myNavbar"></div>
+<div id="layoutSidenav">
+    <div th:replace="sidebar :: mySidebar"></div>
+
+    <div id="layoutSidenav_content">
+        <div class="container mx-auto">
+            <br>
+            <div class="row">
+                <div class="col d-flex align-items-start">
+                    <h2 class="text-center mb-4">Daily Sales Transactions</h2>
+                    <div class="col d-flex align-items-end justify-content-end">
+                        <form class="form-inline">
+                            <div class="input-group">
+                                <input class="form-control" type="text" placeholder="Invoice number..."
+                                       aria-label="Search" aria-describedby="basic-addon2" />
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <hr>
+                <br><br>
+                <!-- Add a row with a column to position the form -->
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead >
+                            <tr>
+                                <th>Customer Tpin</th>
+                                <th>Customer Name</th>
+                                <th>Total Amount</th>
+                                <th>Taxable Amount</th>
+                                <th>Tax</th>
+                                <th>Invoice Number</th>
+                                <th>Date</th>
+                                <th style="text-align: center">Status</th>
+                                <th style="text-align: center">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody th:if="${#lists.isEmpty(invoices)}">
+                            <tr>
+                                <td colspan="10" style="color: red; text-align: center;">No Data found</td>
+                            </tr>
+                            </tbody>
+                            <tbody >
+                            <tr th:each="invoice, iterStat : ${invoices}" id="myTable">
+                                <td th:text="${invoice.spplrTpin}"></td>
+                                <td th:text="${invoice.spplrNm}"></td>
+                                <td th:text="${invoice.totAmt}"></td>
+                                <td th:text="${invoice.totTaxblAmt}"></td>
+                                <td th:text="${invoice.totTaxAmt}"></td>
+                                <td th:text="${invoice.spplrInvcNo}"></td>
+                                <td th:text="${invoice.salesDt}"></td>
+                                <td th:text="${invoice.salesDt}"></td>
+                                <td style="text-align: center" ><button class="btn btn-info" data-toggle="modal" data-target="#purchaseOrderModal" id="purchase-orders">select</button></td>
+
+                                <td style="text-align: center">
+                                    <button class="btn btn-info" id="post-button"   data-po="" onclick="postInvoice(this)" th:attr="data-invoice=${invoice.spplrInvcNo}">Post</button></td>
+                            </tr>
+                            <!-- Nested table to display related purchase orders -->
+                            </tbody>
+                        </table>
+                        <div class="modal fade" id="purchaseOrderModal" tabindex="-1" role="dialog" aria-labelledby="purchaseOrderModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-xl" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="purchaseOrderModalLabel">Select Related Purchase Orders</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <!-- Dynamic purchase order details go here -->
+                                        <div id="modal-content">
+                                            <table class="table table-sm table-bordered mt-2" style=" width: 100%;table-layout: auto;">
+                                                <thead>
+                                                <tr>
+                                                    <th>PO Number</th>
+                                                    <th>Vendor Name</th>
+                                                    <th>Taxable Amount</th>
+                                                    <th>Tax Amount</th>
+                                                    <th>Total Amount</th>
+                                                    <th>Items</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody id="modal-body-content">
+                                                <tr th:each="po : ${purchaseOrders}">
+                                                    <td th:text="${po.poNumber}"></td>
+                                                    <td th:text="${po.vendorName}"></td>
+                                                    <td th:text="${po.taxableAmount}"></td>
+                                                    <td th:text="${po.tax}"></td>
+                                                    <td th:text="${po.totalAmount}"></td>
+                                                    <td> <table class="table table-sm table-bordered" style=" overflow-y: auto;">
+                                                        <thead>
+                                                        <tr>
+                                                            <th>Item Name</th>
+                                                            <th>Quantity</th>
+                                                            <th>Price</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        <tr th:each="item : ${po.items}">
+                                                            <td th:text="${item.itemName}"></td>
+                                                            <td th:text="${item.quantity}"></td>
+                                                            <td th:text="${item.price}"></td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </table></td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const modalRows = document.querySelectorAll('#purchaseOrderModal tbody tr');
+        $(document).ready(function() {
+            // Initialize select2 for all dropdowns
+            $('.sage-dropdown').select2({
+                placeholder: 'Select a Sage item...',
+                allowClear: true
+            });
+        });
+
+
+        // Add click event listener to each row
+        modalRows.forEach(row => {
+            row.addEventListener('click', () => {
+                // Get the selected PO number
+                const poNumber = row.querySelector('td:first-child').textContent;
+
+                // Update the button text with the selected PO number
+                const selectButton = document.getElementById('purchase-orders');
+                selectButton.textContent = poNumber;
+
+                const postButton = document.getElementById('post-button');
+                postButton.setAttribute('data-po', poNumber);
+
+                // Close the modal
+                $('#purchaseOrderModal').modal('hide');
+            });
+        });
+        function postInvoice(button) {
+            // Get the invoice number from the button's data attribute
+            const invoiceNumber = button.getAttribute('data-invoice');
+
+            // Get the PO number from the button's data attribute
+            const poNumber = button.getAttribute('data-po');
+            if (!poNumber) {
+                console.log('PO Number is not set. Please select a purchase order.');
+                alert('Please select a purchase order before posting.'); // Alert the user
+                return; // Exit the function if PO number is not set
+            }
+
+            // Log the invoice and PO number to the console
+            console.log('Invoice Number:', invoiceNumber);
+            console.log('PO Number:', poNumber);
+            const apiUrl = 'http://localhost:8000/api/post-po-to-sage';
+            const url = `${apiUrl}?invnumber=${encodeURIComponent(invoiceNumber)}&po_number=${encodeURIComponent(poNumber)}`;
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.text(); // or response.json() if the response is JSON
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    alert('Purchase order posted successfully!'); // Notify the user of success
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to post purchase order: ' + error.message); // Notify the user of failure
+                });
+        }
+    </script>
+</body>
+</html>
