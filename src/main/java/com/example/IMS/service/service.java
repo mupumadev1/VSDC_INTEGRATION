@@ -3365,6 +3365,41 @@ import java.util.*;
         // Print to verify values (optional)
         System.out.println(poinval);
 
+
+
+        // Instantiate the Poinvj object
+        Poinvj poinvj = new Poinvj();
+
+        // Set the properties
+        BigDecimal poinvjSeq = poinvjRepo.findMaxProrateSeq();
+        poinvj.setId(maxID.getId().add(BigDecimal.valueOf(2)));
+        poinvj.setAudtdate(currentDate());
+        poinvj.setAudttime(currentTime());
+        poinvj.setAudtuser("ADMIN");
+        poinvj.setAudtorg(company);
+        poinvj.setProrateseq(porcpjSeq.add(new BigDecimal("1")));
+        poinvj.setPostdate(currentDate());
+        poinvj.setScamount(sale.path("totAmt").decimalValue());
+        poinvj.setFcamount(sale.path("totAmt").decimalValue());
+        poinvj.setScdoctotal(sale.path("totAmt").decimalValue());
+        poinvj.setIscomplete((short) 1);                 // example iscomplete flag
+        poinvj.setDtcomplete(currentDate());
+        poinvj.setScrtgamt(new BigDecimal("0.0"));
+        poinvj.setCaxamount(new BigDecimal("0.0"));
+
+        //Save
+        poinvjRepository.save(poinvj);
+
+        // Print to verify values (optional)
+        System.out.println(poinvj);
+
+
+
+
+
+//Instantiate
+
+
     }
     //Select purchases
     @Retryable( backoff = @Backoff(delay = 2000))
