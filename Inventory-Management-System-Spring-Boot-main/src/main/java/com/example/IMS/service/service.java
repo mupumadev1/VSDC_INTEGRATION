@@ -2,8 +2,11 @@ package com.example.IMS.service;
 
 import com.example.IMS.controller.PurchasesResponse;
 import com.example.IMS.dto.*;
+import com.example.IMS.dto.mysql.pendingPurchases;
 import com.example.IMS.entity.mssql.*;
+import com.example.IMS.entity.mysql.Auditlog;
 import com.example.IMS.repository.mssql.*;
+import com.example.IMS.repository.mysql.AuditlogRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,24 +50,43 @@ public class service {
     private final PorcpahRepository porcpahRepository ;
     private final PorcpalRepository porcpalRepository;
     private final PorcpnRepository porcpnRepository;
+    private final AuditlogRepository auditlogRepository;
     private final Apven_repo apvenRepo;
+    private final ApibcRepository apibcRepo;
+    private final ApibdRepository apibdRepo;
+    private final ApibsRepository apibsRepo;
+    private final ApibhRepository apibhRepo;
+    private final ApoblRepository apoblRepo;
     private final PoinvahRepository poinvahRepository;
     private final Poinvh1Repository poinvh1Repository;
     private final PoinvalRepository poinvalRepository;
     private final Poinvh2Repository poinvh2Repository;
     private final PoinvjRepository poinvjRepository;
     private final  PoinvnRepository poinvnRepository;
+    private final App02Repository app02_repo;
 
     public static Map<String,Integer> purchaseType =new HashMap<>();
     static {
 
     }
+    public String validateReference(String ref) {
+        if (ref.length() > 60) {
+            return ref.substring(0, 59);
+        }
+        return ref;
+    }
+    private final PoinvlRepository poinvlRepository;
+    private final Icival_repo icival_repo;
+
     public BigDecimal dayEndNo(){
       Poopt poopt =  pooptRepo.findByRatetype("SP");
       return poopt.getLgendayend();
 
     }
-
+    public int getBatchNumber() {
+        int batchNo = app02_repo.findbatchid();
+        return ++batchNo;
+    }
     public List<importItemListDTO> getImports(String refNumber) throws JsonProcessingException {
 
         selectImportDataDTO importDataDTO = new selectImportDataDTO();
@@ -681,6 +703,53 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
 
 // Save the instance
                 porcplRepo.save(porcpl);
+                //Icival
+                Icival icival = new Icival();
+                IcivalId icivalId = new IcivalId();
+                icivalId.setItemno(poporl.getItemno());
+                icivalId.setFiscyear("");
+                icivalId.setFiscperiod((short)8);
+                icivalId.setDayendseq(Integer.parseInt(dayEndNo().toString()));
+                icivalId.setLocation("HQ");
+                icivalId.setAcctset("STOCK");
+                icivalId.setLineno((short)1);
+                icivalId.setTransdate(currentDate());
+                icivalId.setEntryseq(1);// Assuming you have a composite key class named IcivalId
+                icival.setId(icivalId);
+                icival.setAudtdate(currentDate());
+                icival.setAudttime(currentTime());
+                icival.setQuantity(new BigDecimal("0.0"));
+                icival.setConversion(new BigDecimal("1.0"));
+                icival.setTranscost(node.path("spplyAmt").decimalValue());
+                icival.setStkqty(new BigDecimal("0.0"));
+                icival.setOptamt(new BigDecimal("0.0"));
+                icival.setTotalcost(node.path("spplyAmt").decimalValue());
+                icival.setRecentcost(node.path("prc").decimalValue());
+                icival.setCost1(new BigDecimal("0.0"));
+                icival.setCost2(new BigDecimal("0.0"));
+                icival.setLastcost(node.path("prc").decimalValue());
+                icival.setStdcost(new BigDecimal("0.0"));
+                icival.setCostconv(new BigDecimal("1.0"));
+                icival.setTotalqty(new BigDecimal("0.0"));
+                icival.setBaseprice(new BigDecimal("0.0"));
+                icival.setBaseconv(new BigDecimal("0.0"));
+                icival.setDatebus(currentDate());
+                icival.setAudtuser("ADMIN");
+                icival.setAudtorg(company);
+                icival.setCategory(icitem.getCategory());
+                icival.setDocnum(nextReceiptNo());
+                icival.setUnit(poporl.getOrderunit());
+                icival.setApp("PO");
+                icival.setStockunit(poporl.getOrderunit());
+                icival.setDefpriclst("");
+                icival.setCostunit(poporl.getOrderunit());
+                icival.setPricelist("");
+                icival.setBaseunit("");
+                icival.setTranstype((short) 1);
+                icival.setPricedecs((short) 0);
+                icival.setDetailnum(node.path("itemSeq").shortValue());
+                icival.setCompnum(0);
+                icival_repo.save(icival);
             }
         }
 
@@ -1104,10 +1173,223 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
         }
     }
     public void createPOInvoice(JsonNode sale, String ponumber,List<postPOItemsDTO>items){
-    Porcph1 maxID = porcph1Repo.findMaxId();
+
+
+        Porcph1 maxID = porcph1Repo.findMaxId();
     Poporh1 poporh1 = poporh1Repo.findByPonumberContaining(ponumber);
     Optional<Apven> apven = apvenRepo.findByVendorid(poporh1.getVdcode());
     Poinvh1 poinvh1Instance = poinvh1Repository.findMaxId();
+        Apibh apibh = Apibh.builder()
+                .id(ApibhId.builder()
+                        .cntbtch(new BigDecimal(getBatchNumber()))
+                        .cntitem(BigDecimal.valueOf(1))
+                        .build())
+                .audtdate(currentDate())
+                .audttime(currentTime())
+                .audtuser("ADMIN")
+                .audtorg(company)
+                .idvend(poporh1.getVdcode())
+                .idinvc(sale.path("spplrInvcNo").asText())
+                .idrmitto("")
+                .texttrx((short) 1)
+                .idtrx((short) 12)
+                .invcstts((short) 0)
+                .ordrnbr("")
+                .ponbr(poporh1.getPonumber())
+                .invcdesc(poporh1.getDescriptio())
+                .swprtinvc((short) 0)
+                .invcapplto("")
+                .idacctset(poporh1.getCurrency())
+                .dateinvc(currentDate())
+                .dateasof(currentDate())
+                .fiscyr(invoiceDto.getFiscYear())
+                .fiscper(invoiceDto.getFiscPeriod())
+                .codecurn(poporh1.getCurrency())
+                .ratetype("SP")
+                .swmanrte((short) 0)
+                .exchratehc(poporh1.getRate())
+                .origratehc(BigDecimal.valueOf(1))
+                .termcode("COD")
+                .swtermovrd((short) 1)
+                .datedue(currentDate())
+                .datedisc(0)
+                .pctdisc(BigDecimal.valueOf(0))
+                .amtdiscavl(BigDecimal.valueOf(0))
+                .lastline(1)
+                .swtaxbl((short) 0)
+                .swcalctx((short) 1)
+                .codetaxgrp(apven.get().getCodetaxgrp())
+                .codetax1("VAT"+poporh1.getCurrency())
+                .codetax2("")
+                .codetax3("")
+                .codetax4("")
+                .codetax5("")
+                .taxclass1((short) 1)
+                .taxclass2((short) 0)
+                .taxclass3((short) 0)
+                .taxclass4((short) 0)
+                .taxclass5((short) 0)
+                .basetax1(sale.path("totTaxblAmt").decimalValue())
+                .basetax2(BigDecimal.valueOf(0))
+                .basetax3(BigDecimal.valueOf(0))
+                .basetax4(BigDecimal.valueOf(0))
+                .basetax5(BigDecimal.valueOf(0))
+                .amttax1(sale.path("totVatAmt").decimalValue())
+                .amttax2(BigDecimal.valueOf(0))
+                .amttax3(BigDecimal.valueOf(0))
+                .amttax4(BigDecimal.valueOf(0))
+                .amttax5(BigDecimal.valueOf(0))
+                .amt1099(BigDecimal.valueOf(0))
+                .amtdistset(BigDecimal.valueOf(0))
+                .amttaxdist(BigDecimal.valueOf(0))
+                .amtinvctot(sale.path("totTaxblAmt").decimalValue())
+                .amtalloctx(BigDecimal.valueOf(0))
+                .cntpaymsch(1)
+                .amttotdist(sale.path("totTaxblAmt").decimalValue())
+                .amtgrosdst(sale.path("totAmt").decimalValue())
+                .idppd("")
+                .textrmit("")
+                .textste1("")
+                .textste2("")
+                .textste3("")
+                .textste4("")
+                .namecity("")
+                .codestte("")
+                .codepstl("")
+                .codectry("")
+                .namectac("")
+                .textphon("")
+                .textfax("")
+                .daterate(currentDate())
+                .amtrectax(sale.path("totVatAmt").decimalValue())
+                .codepayppd(0)
+                .codevndgrp(poporh1.getCurrency())
+                .termsdesc("Cash on Delivery")
+                .iddistset("")
+                .id1099Clas("")
+                .amttaxtot(sale.path("totVatAmt").decimalValue())
+                .amtgrostot(sale.path("totAmt").decimalValue())
+                .swtaxincl1((short) 0)
+                .swtaxincl2((short) 0)
+                .swtaxincl3((short) 0)
+                .swtaxincl4((short) 0)
+                .swtaxincl5((short) 0)
+                .amtexptax(BigDecimal.valueOf(0))
+                .amtaxtobe(BigDecimal.valueOf(0))
+                .taxoutbal(BigDecimal.valueOf(0))
+                .codeoper((short) 1)
+                .acctrec1("21040                                        ")
+                .acctrec2("")
+                .acctrec3("")
+                .acctrec4("")
+                .acctrec5("")
+                .acctexp1("")
+                .acctexp2("")
+                .acctexp3("")
+                .acctexp4("")
+                .acctexp5("")
+                .drillapp("PO")
+                .drilltype((short) 5)
+                .drilldwnlk(0)
+                .swjob((short) 0)
+                .amtrecdist(sale.path("totVatAmt").decimalValue())
+                .amtexpdist(BigDecimal.valueOf(0))
+                .errbatch(0)
+                .errentry(0)
+                .email("")
+                .ctacphone("")
+                .ctacfax("")
+                .ctacemail("")
+                .amtppd(BigDecimal.valueOf(0))
+                .idstdinvc("")
+                .dateprcs(0)
+                .amtdsbwtax(sale.path("totTaxblAmt").decimalValue())
+                .amtdsbntax(sale.path("totTaxblAmt").decimalValue())
+                .amtdscbase(sale.path("totTaxblAmt").decimalValue())
+                .swrtginvc((short) 0)
+                .rtgapplyto("")
+                .swrtg((short) 0)
+                .rtgamt(BigDecimal.valueOf(0))
+                .rtgpercent(BigDecimal.valueOf(0))
+                .rtgdays((short) 0)
+                .rtgdatedue(0)
+                .rtgterms("")
+                .swrtgddtov((short) 0)
+                .swrtgamtov((short) 0)
+                .swrtgrate((short) 0)
+                .swtxbsectl((short) 1)
+                .values(0)
+                .origcomp("")
+                .detailcnt(1)
+                .srceappl("AP")
+                .swhold((short) 0)
+                .apversion("67A")
+                .taxversion(1)
+                .swtxrtgrpt((short) 0)
+                .codecurnrc(invoiceDto.getCurrency())
+                .swtxctlrc((short) 1)
+                .raterc(BigDecimal.valueOf(1))
+                .ratetyperc("SP")
+                .ratedaterc(Integer.parseInt(invoiceDto.getInvoiceDate()))
+                .rateoprc((short) 1)
+                .swraterc((short) 0)
+                .txamt1Rc(BigDecimal.valueOf(0))
+                .txamt2Rc(BigDecimal.valueOf(0))
+                .txamt3Rc(BigDecimal.valueOf(0))
+                .txamt4Rc(BigDecimal.valueOf(0))
+                .txamt5Rc(BigDecimal.valueOf(0))
+                .txtotrc(BigDecimal.valueOf(0))
+                .txallrc(BigDecimal.valueOf(0))
+                .txexprc(BigDecimal.valueOf(0))
+                .txrecrc(BigDecimal.valueOf(0))
+                .txbsert1Tc(BigDecimal.valueOf(0))
+                .txbsert2Tc(BigDecimal.valueOf(0))
+                .txbsert3Tc(BigDecimal.valueOf(0))
+                .txbsert4Tc(BigDecimal.valueOf(0))
+                .txbsert5Tc(BigDecimal.valueOf(0))
+                .txamtrt1Tc(BigDecimal.valueOf(0))
+                .txamtrt2Tc(BigDecimal.valueOf(0))
+                .txamtrt3Tc(BigDecimal.valueOf(0))
+                .txamtrt4Tc(BigDecimal.valueOf(0))
+                .txamtrt5Tc(BigDecimal.valueOf(0))
+                .txbse1Hc(BigDecimal.valueOf(0))
+                .txbse2Hc(BigDecimal.valueOf(0))
+                .txbse3Hc(BigDecimal.valueOf(0))
+                .txbse4Hc(BigDecimal.valueOf(0))
+                .txbse5Hc(BigDecimal.valueOf(0))
+                .txamt1Hc(BigDecimal.valueOf(0))
+                .txamt2Hc(BigDecimal.valueOf(0))
+                .txamt3Hc(BigDecimal.valueOf(0))
+                .txamt4Hc(BigDecimal.valueOf(0))
+                .txamt5Hc(BigDecimal.valueOf(0))
+                .amtgroshc(BigDecimal.valueOf(1000))
+                .rtgamthc(BigDecimal.valueOf(0))
+                .amtdischc(BigDecimal.valueOf(0))
+                .amt1099Hc(BigDecimal.valueOf(0))
+                .amtppdhc(BigDecimal.valueOf(0))
+                .amtduetc(bigDecimalValue(invoiceDto.getAmount()))
+                .amtduehc(bigDecimalValue(invoiceDto.getAmount()))
+                .textven(invoiceDto.getVendorName())
+                .enteredby("ADMIN")
+                .datebus(currentDate())
+                .idn("")
+                .amtwht1Tc(BigDecimal.valueOf(0))
+                .amtwht2Tc(BigDecimal.valueOf(0))
+                .amtwht3Tc(BigDecimal.valueOf(0))
+                .amtwht4Tc(BigDecimal.valueOf(0))
+                .amtwht5Tc(BigDecimal.valueOf(0))
+                .amtcxbs1Tc(BigDecimal.valueOf(0))
+                .amtcxbs2Tc(BigDecimal.valueOf(0))
+                .amtcxbs3Tc(BigDecimal.valueOf(0))
+                .amtcxbs4Tc(BigDecimal.valueOf(0))
+                .amtcxbs5Tc(BigDecimal.valueOf(0))
+                .amtcxtx1Tc(BigDecimal.valueOf(0))
+                .amtcxtx2Tc(BigDecimal.valueOf(0))
+                .amtcxtx3Tc(BigDecimal.valueOf(0))
+                .amtcxtx4Tc(BigDecimal.valueOf(0))
+                .amtcxtx5Tc(BigDecimal.valueOf(0))
+                .build();
+        apibh_repo.save(apibh);
     Poinvh1 poinvh1 = new Poinvh1();
     poinvh1.setId(poinvh1Instance.getId().add(new BigDecimal(2)));
     poinvh1.setAudtdate(new BigDecimal(0));
@@ -1162,29 +1444,29 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
     poinvh1.setSpread(new BigDecimal(0.0));
     poinvh1.setRatetype("SP");
     poinvh1.setRatematch((short) 0);
-    poinvh1.setRatedate(new BigDecimal(0));
-    poinvh1.setRateoper((short) 0);
+    poinvh1.setRatedate(currentDate());
+    poinvh1.setRateoper((short) 1);
     poinvh1.setRateover((short) 0);
-    poinvh1.setScurndecml((short) 0);
-    poinvh1.setDtpymtasof(new BigDecimal(0));
-    poinvh1.setTermdueamt(new BigDecimal(0.0));
+    poinvh1.setScurndecml((short) 2);
+    poinvh1.setDtpymtasof(currentDate());
+    poinvh1.setTermdueamt(sale.path("totAmt").decimalValue());
     poinvh1.setExtweight(new BigDecimal(0.0));
-    poinvh1.setExtended(new BigDecimal(0.0));
-    poinvh1.setDoctotal(new BigDecimal(0.0));
+    poinvh1.setExtended(sale.path("totTaxblAmt").decimalValue());
+    poinvh1.setDoctotal(sale.path("totAmt").decimalValue());
     poinvh1.setAmount(new BigDecimal(0.0));
-    poinvh1.setRqreceived(new BigDecimal(0.0));
-    poinvh1.setTaxgroup("");
-    poinvh1.setTaxauth1("");
+    poinvh1.setRqreceived(sale.path("totItemCnt").decimalValue());
+    poinvh1.setTaxgroup(apven.get().getCodetaxgrp());
+    poinvh1.setTaxauth1("VATZMW");
     poinvh1.setTaxauth2("");
     poinvh1.setTaxauth3("");
     poinvh1.setTaxauth4("");
     poinvh1.setTaxauth5("");
-    poinvh1.setTaxclass1((short) 0);
-    poinvh1.setTaxclass2((short) 0);
-    poinvh1.setTaxclass3((short) 0);
-    poinvh1.setTaxclass4((short) 0);
-    poinvh1.setTaxclass5((short) 0);
-    poinvh1.setTaxbase1(new BigDecimal(0.0));
+    poinvh1.setTaxclass1((short) 1);
+    poinvh1.setTaxclass2((short) 1);
+    poinvh1.setTaxclass3((short) 1);
+    poinvh1.setTaxclass4((short) 1);
+    poinvh1.setTaxclass5((short) 1);
+    poinvh1.setTaxbase1(sale.path("totTaxblAmt").decimalValue());
     poinvh1.setTaxbase2(new BigDecimal(0.0));
     poinvh1.setTaxbase3(new BigDecimal(0.0));
     poinvh1.setTaxbase4(new BigDecimal(0.0));
@@ -1194,17 +1476,17 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
     poinvh1.setTxinclude3(new BigDecimal(0.0));
     poinvh1.setTxinclude4(new BigDecimal(0.0));
     poinvh1.setTxinclude5(new BigDecimal(0.0));
-    poinvh1.setTxexclude1(new BigDecimal(0.0));
+    poinvh1.setTxexclude1(sale.path("totTaxAmt").decimalValue());
     poinvh1.setTxexclude2(new BigDecimal(0.0));
     poinvh1.setTxexclude3(new BigDecimal(0.0));
     poinvh1.setTxexclude4(new BigDecimal(0.0));
     poinvh1.setTxexclude5(new BigDecimal(0.0));
-    poinvh1.setTaxamount1(new BigDecimal(0.0));
+    poinvh1.setTaxamount1(sale.path("totTaxAmt").decimalValue());
     poinvh1.setTaxamount2(new BigDecimal(0.0));
     poinvh1.setTaxamount3(new BigDecimal(0.0));
     poinvh1.setTaxamount4(new BigDecimal(0.0));
     poinvh1.setTaxamount5(new BigDecimal(0.0));
-    poinvh1.setTxrecvamt1(new BigDecimal(0.0));
+    poinvh1.setTxrecvamt1(sale.path("totTaxAmt").decimalValue());
     poinvh1.setTxrecvamt2(new BigDecimal(0.0));
     poinvh1.setTxrecvamt3(new BigDecimal(0.0));
     poinvh1.setTxrecvamt4(new BigDecimal(0.0));
@@ -1219,11 +1501,11 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
     poinvh1.setTxalloamt3(new BigDecimal(0.0));
     poinvh1.setTxalloamt4(new BigDecimal(0.0));
     poinvh1.setTxalloamt5(new BigDecimal(0.0));
-    poinvh1.setTxbaseallo(new BigDecimal(0.0));
+    poinvh1.setTxbaseallo(sale.path("totTaxblAmt").decimalValue());
     poinvh1.setTxincluded(new BigDecimal(0.0));
-    poinvh1.setTxexcluded(new BigDecimal(0.0));
-    poinvh1.setTaxamount(new BigDecimal(0.0));
-    poinvh1.setTxrecvamt(new BigDecimal(0.0));
+    poinvh1.setTxexcluded(sale.path("totTaxAmt").decimalValue());
+    poinvh1.setTaxamount(sale.path("totTaxAmt").decimalValue());
+    poinvh1.setTxrecvamt(sale.path("totTaxAmt").decimalValue());
     poinvh1.setTxexpsamt(new BigDecimal(0.0));
     poinvh1.setTxalloamt(new BigDecimal(0.0));
     poinvh1.setF1099class("");
@@ -1231,11 +1513,11 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
     poinvh1.setMprorated(new BigDecimal(0.0));
     poinvh1.setMtoprorate(new BigDecimal(0.0));
     poinvh1.setMexpensed(new BigDecimal(0.0));
-    poinvh1.setScamount(new BigDecimal(0.0));
-    poinvh1.setFcamount(new BigDecimal(0.0));
+    poinvh1.setScamount(sale.path("totAmt").decimalValue());
+    poinvh1.setFcamount(sale.path("totAmt").decimalValue());
     poinvh1.setMultircp((short) 0);
     poinvh1.setRcps(0);
-    poinvh1.setVdemail("");
+    poinvh1.setVdemail(apven.get().getEmail1());
     poinvh1.setVdphonec("");
     poinvh1.setVdfaxc("");
     poinvh1.setVdemailc("");
@@ -1243,9 +1525,9 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
     poinvh1.setDiscount(new BigDecimal(0.0));
     poinvh1.setValues(0);
     poinvh1.setOnhold((short) 0);
-    poinvh1.setTermdbwt(new BigDecimal(0.0));
-    poinvh1.setTermdbnt(new BigDecimal(0.0));
-    poinvh1.setVerprorate((short) 0);
+    poinvh1.setTermdbwt(sale.path("totAmt").decimalValue());
+    poinvh1.setTermdbnt(sale.path("totTaxblAmt").decimalValue());
+    poinvh1.setVerprorate((short) 2);
     poinvh1.setHasrtg((short) 0);
     poinvh1.setRtgrate((short) 0);
     poinvh1.setRtgbase((short) 0);
@@ -1253,13 +1535,485 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
     poinvh1.setRtgamount(new BigDecimal(0.0));
     poinvh1.setJoblines(0);
     poinvh1.setJobcosts(0);
-    poinvh1.setTrcurrency("");
-    poinvh1.setRaterc(new BigDecimal(0.0));
+    poinvh1.setTrcurrency("ZMW");
+    poinvh1.setRaterc(new BigDecimal(1.0));
     poinvh1.setSpreadrc(new BigDecimal(0.0));
-    poinvh1.setRatetyperc("");
-    poinvh1.setRatemtchrc((short) 0);
-    poinvh1.setRatedaterc(new BigDecimal(0));
-}
+    poinvh1.setRatetyperc("SP");
+    poinvh1.setRatemtchrc((short) 1);
+    poinvh1.setRatedaterc(currentDate());
+    poinvh1.setRateoper((short)1);
+    poinvh1.setRatercover((short)0);
+    poinvh1.setRcurndecml((short)2);
+        poinvh1.setTaramount1(sale.path("totTaxAmt").decimalValue()); // Example value
+        poinvh1.setTaramount2(new BigDecimal("0.000"));
+        poinvh1.setTaramount3(new BigDecimal("0.000"));
+        poinvh1.setTaramount4(new BigDecimal("0.000"));
+        poinvh1.setTaramount5(new BigDecimal("0.000"));
+        poinvh1.setTrinclude1(new BigDecimal("0.000"));
+        poinvh1.setTrinclude2(new BigDecimal("0.000"));
+        poinvh1.setTrinclude3(new BigDecimal("0.000"));
+        poinvh1.setTrinclude4(new BigDecimal("0.000"));
+        poinvh1.setTrinclude5(new BigDecimal("0.000"));
+        poinvh1.setTrexclude1(sale.path("totTaxAmt").decimalValue());
+        poinvh1.setTrexclude2(new BigDecimal("0.000"));
+        poinvh1.setTrexclude3(new BigDecimal("0.000"));
+        poinvh1.setTrexclude4(new BigDecimal("0.000"));
+        poinvh1.setTrexclude5(new BigDecimal("0.000"));
+        poinvh1.setTrrecvamt1(sale.path("totTaxAmt").decimalValue());
+        poinvh1.setTrrecvamt2(new BigDecimal("0.000"));
+        poinvh1.setTrrecvamt3(new BigDecimal("0.000"));
+        poinvh1.setTrrecvamt4(new BigDecimal("0.000"));
+        poinvh1.setTrrecvamt5(new BigDecimal("0.000"));
+        poinvh1.setTrexpsamt1(new BigDecimal("0.000"));
+        poinvh1.setTrexpsamt2(new BigDecimal("0.000"));
+        poinvh1.setTrexpsamt3(new BigDecimal("0.000"));
+        poinvh1.setTrexpsamt4(new BigDecimal("0.000"));
+        poinvh1.setTrexpsamt5(new BigDecimal("0.000"));
+        poinvh1.setTralloamt1(new BigDecimal("0.000"));
+        poinvh1.setTralloamt2(new BigDecimal("0.000"));
+        poinvh1.setTralloamt3(new BigDecimal("0.000"));
+        poinvh1.setTralloamt4(new BigDecimal("0.000"));
+        poinvh1.setTralloamt5(new BigDecimal("0.000"));
+        poinvh1.setRtgtaxrep((short) 0); // Example short value
+        poinvh1.setTaxversion(3); // Example integer value
+        poinvh1.setRaxbase1(new BigDecimal("0.000"));
+        poinvh1.setRaxbase2(new BigDecimal("0.000"));
+        poinvh1.setRaxbase3(new BigDecimal("0.000"));
+        poinvh1.setRaxbase4(new BigDecimal("0.000"));
+        poinvh1.setRaxbase5(new BigDecimal("0.000"));
+        poinvh1.setRaxamount1(new BigDecimal("0.000"));
+        poinvh1.setRaxamount2(new BigDecimal("0.000"));
+        poinvh1.setRaxamount3(new BigDecimal("0.000"));
+        poinvh1.setRaxamount4(new BigDecimal("0.000"));
+        poinvh1.setRaxamount5(new BigDecimal("0.000"));
+        poinvh1.setRxrecvamt1(new BigDecimal("0.000"));
+        poinvh1.setRxrecvamt2(new BigDecimal("0.000"));
+        poinvh1.setRxrecvamt3(new BigDecimal("0.000"));
+        poinvh1.setRxrecvamt4(new BigDecimal("0.000"));
+        poinvh1.setRxrecvamt5(new BigDecimal("0.000"));
+        poinvh1.setRxexpsamt1(new BigDecimal("0.000"));
+        poinvh1.setRxexpsamt2(new BigDecimal("0.000"));
+        poinvh1.setRxexpsamt3(new BigDecimal("0.000"));
+        poinvh1.setRxexpsamt4(new BigDecimal("0.000"));
+        poinvh1.setRxexpsamt5(new BigDecimal("0.000"));
+        poinvh1.setRxalloamt1(new BigDecimal("0.000"));
+        poinvh1.setRxalloamt2(new BigDecimal("0.000"));
+        poinvh1.setRxalloamt3(new BigDecimal("0.000"));
+        poinvh1.setRxalloamt4(new BigDecimal("0.000"));
+        poinvh1.setRxalloamt5(new BigDecimal("0.000"));
+        poinvh1Repository.save(poinvh1);
+
+                //POINVH2
+        Poinvh2 poinvh2 = new Poinvh2();
+        poinvh2.setId(poinvh1Instance.getId().add(new BigDecimal(2)));
+        poinvh2.setAudtdate(currentDate());
+        poinvh2.setAudttime(currentTime());
+        poinvh2.setAudtuser("ADMIN");
+        poinvh2.setAudtorg(company);
+        poinvh2.setBtcode("");
+        poinvh2.setBtdesc("");
+        poinvh2.setBtaddress1("");
+        poinvh2.setBtaddress2("");
+        poinvh2.setBtaddress3("");
+        poinvh2.setBtaddress4("");
+        poinvh2.setBtcity("");
+        poinvh2.setBtstate("");
+        poinvh2.setBtzip("");
+        poinvh2.setBtcountry("");
+        poinvh2.setBtphone("");
+        poinvh2.setBtfax("");
+        poinvh2.setBtcontact("");
+        poinvh2.setStcode("");
+        poinvh2.setStdesc("");
+        poinvh2.setStaddress1("");
+        poinvh2.setStaddress2("");
+        poinvh2.setStaddress3("");
+        poinvh2.setStaddress4("");
+        poinvh2.setStcity("");
+        poinvh2.setStstate("");
+        poinvh2.setStzip("");
+        poinvh2.setStcountry("");
+        poinvh2.setStphone("");
+        poinvh2.setStfax("");
+        poinvh2.setStcontact("");
+        poinvh2.setRtcode("");
+        poinvh2.setRtdesc("");
+        poinvh2.setRtaddress1("");
+        poinvh2.setRtaddress2("");
+        poinvh2.setRtaddress3("");
+        poinvh2.setRtaddress4("");
+        poinvh2.setRtcity("");
+        poinvh2.setRtstate("");
+        poinvh2.setRtzip("");
+        poinvh2.setRtcountry("");
+        poinvh2.setRtphone("");
+        poinvh2.setRtfax("");
+        poinvh2.setRtcontact("");
+        poinvh2.setPdrate(BigDecimal.ONE);
+        poinvh2.setPdratetype("");
+        poinvh2.setPdratedate(currentDate());
+        poinvh2.setPdrateoper((short) 1);
+        poinvh2.setPdrateover((short) 0);
+        poinvh2.setBtemail("");
+        poinvh2.setBtphonec("");
+        poinvh2.setBtfaxc("");
+        poinvh2.setBtemailc("");
+        poinvh2.setStemail("");
+        poinvh2.setStphonec("");
+        poinvh2.setStfaxc("");
+        poinvh2.setStemailc("");
+        poinvh2.setRtemail("");
+        poinvh2.setRtphonec("");
+        poinvh2.setRtfaxc("");
+        poinvh2.setRtemailc("");
+        poinvh2.setPdraterc(BigDecimal.ONE);
+        poinvh2.setPdrattyprc("SP");
+        poinvh2.setPdratedtrc(currentDate());
+        poinvh2.setPdrateoprc((short) 1);
+        poinvh2.setPdratercov((short) 0);
+        poinvh2.setVdacctset("ZMW");
+        poinvh2.setDatebus(currentDate());
+        poinvh2.setEnteredby("ADMIN");
+        poinvh2.setDetailnext((short) 2);
+        poinvh2.setIdn("");
+        poinvh2.setCaxbase1(BigDecimal.ZERO);
+        poinvh2.setCaxbase2(BigDecimal.ZERO);
+        poinvh2.setCaxbase3(BigDecimal.ZERO);
+        poinvh2.setCaxbase4(BigDecimal.ZERO);
+        poinvh2.setCaxbase5(BigDecimal.ZERO);
+        poinvh2.setCaxdtamt1(BigDecimal.ZERO);
+        poinvh2.setCaxdtamt2(BigDecimal.ZERO);
+        poinvh2.setCaxdtamt3(BigDecimal.ZERO);
+        poinvh2.setCaxdtamt4(BigDecimal.ZERO);
+        poinvh2.setCaxdtamt5(BigDecimal.ZERO);
+        poinvh2.setCaxapply1((short) 0);
+        poinvh2.setCaxapply2((short) 0);
+        poinvh2.setCaxapply3((short) 0);
+        poinvh2.setCaxapply4((short) 0);
+        poinvh2.setCaxapply5((short) 0);
+        poinvh2.setCaxamount1(BigDecimal.ZERO);
+        poinvh2.setCaxamount2(BigDecimal.ZERO);
+        poinvh2.setCaxamount3(BigDecimal.ZERO);
+        poinvh2.setCaxamount4(BigDecimal.ZERO);
+        poinvh2.setCaxamount5(BigDecimal.ZERO);
+        poinvh2Repository.save(poinvh2);
+        List<Poporl> poporls = poporlRepo.findById(poporh1.getId());
+        for (Poporl poporl :poporls) {
+            for (JsonNode node : sale.path("itemList")) {
+                String itemno = "";
+                Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
+                for (int i = 0; i < items.size(); i++) {
+                    postPOItemsDTO item = items.get(i);
+                    String itemcode = item.getItemCd();
+                    if (itemcode.equals(node.path("itemCd").asText())) {
+                        itemno = item.getSageItemCode();
+                    }
+                }
+
+                BigDecimal poinvlInst = poinvlRepository.findByRcphseq();
+                Porcph1 maxRcpID = porcph1Repo.findMaxId();
+
+                //Icival
+                Icival icival = new Icival();
+                IcivalId icivalId = new IcivalId();
+                icivalId.setItemno(poporl.getItemno());
+                icivalId.setFiscyear("");
+                icivalId.setFiscperiod((short)8);
+                icivalId.setDayendseq(Integer.parseInt(dayEndNo().toString()));
+                icivalId.setLocation("HQ");
+                icivalId.setAcctset("STOCK");
+                icivalId.setLineno((short)1);
+                icivalId.setTransdate(currentDate());
+                icivalId.setEntryseq(1);// Assuming you have a composite key class named IcivalId
+                icival.setId(icivalId);
+                icival.setAudtdate(currentDate());
+                icival.setAudttime(currentTime());
+                icival.setQuantity(node.path("qty").decimalValue());
+                icival.setConversion(new BigDecimal("1.0"));
+                icival.setTranscost(node.path("spplyAmt").decimalValue());
+                icival.setStkqty(node.path("qty").decimalValue());
+                icival.setOptamt(new BigDecimal("0.0"));
+                icival.setTotalcost(node.path("spplyAmt").decimalValue());
+                icival.setRecentcost(node.path("prc").decimalValue());
+                icival.setCost1(new BigDecimal("0.0"));
+                icival.setCost2(new BigDecimal("0.0"));
+                icival.setLastcost(node.path("prc").decimalValue());
+                icival.setStdcost(new BigDecimal("0.0"));
+                icival.setCostconv(new BigDecimal("1.0"));
+                icival.setTotalqty(new BigDecimal("0.0"));
+                icival.setBaseprice(new BigDecimal("0.0"));
+                icival.setBaseconv(new BigDecimal("0.0"));
+                icival.setDatebus(currentDate());
+                icival.setAudtuser("ADMIN");
+                icival.setAudtorg(company);
+                icival.setCategory(icitem.getCategory());
+                icival.setDocnum(nextReceiptNo());
+                icival.setUnit(poporl.getOrderunit());
+                icival.setApp("PO");
+                icival.setStockunit(poporl.getOrderunit());
+                icival.setDefpriclst("");
+                icival.setCostunit(poporl.getOrderunit());
+                icival.setPricelist("");
+                icival.setBaseunit("");
+                icival.setTranstype((short) 2);
+                icival.setPricedecs((short) 0);
+                icival.setDetailnum(node.path("itemSeq").shortValue());
+                icival.setCompnum(0);
+                icival_repo.save(icival);
+                //Poinvl
+                Poinvl poinvl = new Poinvl();
+
+// Initialize embedded ID
+                PoinvlId poinvlId = new PoinvlId();
+                poinvlId.setInvhseq(poinvh1Instance.getId().add(new BigDecimal(2)));
+                poinvlId.setInvlrev(new BigDecimal(1000));
+                // Set embedded ID fields if applicable
+                poinvl.setId(poinvlId);
+
+                poinvl.setAudtdate(currentDate());
+                poinvl.setAudttime(currentTime());
+                poinvl.setAudtuser("ADMIN");
+                poinvl.setAudtorg(company);
+                poinvl.setInvlseq(poinvlInst);
+                poinvl.setInvcseq(poinvlInst.add(new BigDecimal(1)));
+                poinvl.setOeonumber("");
+                poinvl.setIndbtable((short) 1);
+                poinvl.setPostedtoic((short) 0);
+                poinvl.setCompletion((short) 3);
+                poinvl.setDtcomplete(new BigDecimal(0.0));
+                poinvl.setRcphseq(maxRcpID.getId().add(new BigDecimal(2)));
+                poinvl.setRcplseq(maxsqlID());
+                poinvl.setItemexists((short) 1);
+                poinvl.setItemno(itemno);
+                poinvl.setLocation("HQ");
+                poinvl.setItemdesc(poporl.getItemdesc());
+                poinvl.setVenditemno("");
+                poinvl.setHascomment((short) 0);
+                poinvl.setOrderunit(poporl.getOrderunit());
+                poinvl.setOrderconv(new BigDecimal(1));
+                poinvl.setOrderdecml((short) 4);
+                poinvl.setRcpunit(poporl.getOrderunit());
+                poinvl.setRcpconv(new BigDecimal(1));
+                poinvl.setRcpdecml((short) 4);
+                poinvl.setStockdecml((short) 4);
+                poinvl.setRqreceived(node.path("qty").decimalValue());
+                poinvl.setSqreceived(node.path("qty").decimalValue());
+                poinvl.setOqreceived(new BigDecimal(0.0));
+                poinvl.setUnitweight(new BigDecimal(0.0));
+                poinvl.setExtweight(new BigDecimal(0.0));
+                poinvl.setUnitcost(node.path("prc").decimalValue());
+                poinvl.setExtended(node.path("taxblAmt").decimalValue());
+                poinvl.setTaxbase1(node.path("taxblAmt").decimalValue());
+                poinvl.setTaxbase2(new BigDecimal(0.0));
+                poinvl.setTaxbase3(new BigDecimal(0.0));
+                poinvl.setTaxbase4(new BigDecimal(0.0));
+                poinvl.setTaxbase5(new BigDecimal(0.0));
+                poinvl.setTaxclass1((short) 1);
+                poinvl.setTaxclass2((short) 1);
+                poinvl.setTaxclass3((short) 1);
+                poinvl.setTaxclass4((short) 1);
+                poinvl.setTaxclass5((short) 1);
+                poinvl.setTaxrate1(new BigDecimal("16.0"));
+                poinvl.setTaxrate2(new BigDecimal(0.0));
+                poinvl.setTaxrate3(new BigDecimal(0.0));
+                poinvl.setTaxrate4(new BigDecimal(0.0));
+                poinvl.setTaxrate5(new BigDecimal(0.0));
+                poinvl.setTaxinclud1((short) 0);
+                poinvl.setTaxinclud2((short) 0);
+                poinvl.setTaxinclud3((short) 0);
+                poinvl.setTaxinclud4((short) 0);
+                poinvl.setTaxinclud5((short) 0);
+                poinvl.setTaxamount1(node.path("vatAmt").decimalValue());
+                poinvl.setTaxamount2(new BigDecimal(0.0));
+                poinvl.setTaxamount3(new BigDecimal(0.0));
+                poinvl.setTaxamount4(new BigDecimal(0.0));
+                poinvl.setTaxamount5(new BigDecimal(0.0));
+                poinvl.setTxrecvamt1(node.path("vatAmt").decimalValue());
+                poinvl.setTxrecvamt2(new BigDecimal(0.0));
+                poinvl.setTxrecvamt3(new BigDecimal(0.0));
+                poinvl.setTxrecvamt4(new BigDecimal(0.0));
+                poinvl.setTxrecvamt5(new BigDecimal(0.0));
+                poinvl.setTxexpsamt1(new BigDecimal(0.0));
+                poinvl.setTxexpsamt2(new BigDecimal(0.0));
+                poinvl.setTxexpsamt3(new BigDecimal(0.0));
+                poinvl.setTxexpsamt4(new BigDecimal(0.0));
+                poinvl.setTxexpsamt5(new BigDecimal(0.0));
+                poinvl.setTxalloamt1(new BigDecimal(0.0));
+                poinvl.setTxalloamt2(new BigDecimal(0.0));
+                poinvl.setTxalloamt3(new BigDecimal(0.0));
+                poinvl.setTxalloamt4(new BigDecimal(0.0));
+                poinvl.setTxalloamt5(new BigDecimal(0.0));
+                poinvl.setTxbaseallo(node.path("taxblAmt").decimalValue());
+                poinvl.setTxincluded(new BigDecimal(0.0));
+                poinvl.setTxexcluded(node.path("vatAmt").decimalValue());
+                poinvl.setTaxamount(node.path("vatAmt").decimalValue());
+                poinvl.setTxrecvamt(new BigDecimal(0.0));
+                poinvl.setTxexpsamt(new BigDecimal(0.0));
+                poinvl.setTxalloamt(new BigDecimal(0.0));
+                poinvl.setTfbaseallo(node.path("taxblAmt").decimalValue());
+                poinvl.setTfinclude1(new BigDecimal(0.0));
+                poinvl.setTfinclude2(new BigDecimal(0.0));
+                poinvl.setTfinclude3(new BigDecimal(0.0));
+                poinvl.setTfinclude4(new BigDecimal(0.0));
+                poinvl.setTfinclude5(new BigDecimal(0.0));
+                poinvl.setTfalloamt1(new BigDecimal(0.0));
+                poinvl.setTfalloamt2(new BigDecimal(0.0));
+                poinvl.setTfalloamt3(new BigDecimal(0.0));
+                poinvl.setTfalloamt4(new BigDecimal(0.0));
+                poinvl.setTfalloamt5(new BigDecimal(0.0));
+                poinvl.setTfrecvamt1(node.path("vatAmt").decimalValue());
+                poinvl.setTfrecvamt2(new BigDecimal(0.0));
+                poinvl.setTfrecvamt3(new BigDecimal(0.0));
+                poinvl.setTfrecvamt4(new BigDecimal(0.0));
+                poinvl.setTfrecvamt5(new BigDecimal(0.0));
+                poinvl.setTfexpsamt1(new BigDecimal(0.0));
+                poinvl.setTfexpsamt2(new BigDecimal(0.0));
+                poinvl.setTfexpsamt3(new BigDecimal(0.0));
+                poinvl.setTfexpsamt4(new BigDecimal(0.0));
+                poinvl.setTfexpsamt5(new BigDecimal(0.0));
+                poinvl.setTfalloamt1(new BigDecimal(0.0));
+                poinvl.setTfalloamt2(new BigDecimal(0.0));
+                poinvl.setTfalloamt3(new BigDecimal(0.0));
+                poinvl.setTfalloamt4(new BigDecimal(0.0));
+                poinvl.setTfalloamt5(new BigDecimal(0.0));
+                poinvl.setFcextended(new BigDecimal(0.0));
+                poinvl.setGlacexpens("");
+                poinvl.setMprorated(new BigDecimal(0.0));
+                poinvl.setStockitem(poporl.getStockitem());
+                poinvl.setRcpnumber(nextReceiptNo());
+                poinvl.setPorhseq(poporl.getId().getPorhseq());
+                poinvl.setPorlseq(poporl.getPorlseq());
+                poinvl.setPonumber(poporh1.getPonumber());
+                poinvl.setGlnonstkcr("40070");
+                poinvl.setManitemno("");
+                poinvl.setDiscpct(new BigDecimal(0.0));
+                poinvl.setDiscount(new BigDecimal(0.0));
+                poinvl.setDiscountf(new BigDecimal(0.0));
+                poinvl.setXrrqrecevd(node.path("qty").decimalValue());
+                poinvl.setXirqrecevd(new BigDecimal(0.0));
+                poinvl.setPvinvlines(0);
+                poinvl.setFullyinv((short) 1);
+                poinvl.setValues(0);
+                poinvl.setTermdiscbl((short) 1);
+                poinvl.setContract("");
+                poinvl.setProject("");
+                poinvl.setCcategory("");
+                poinvl.setCostclass((short) 0);
+                poinvl.setBilltype((short) 0);
+                poinvl.setBillrate(new BigDecimal(0.0));
+                poinvl.setBillcurr("");
+                poinvl.setAritemno("");
+                poinvl.setArunit("");
+                poinvl.setRtgpercent(new BigDecimal(0.0));
+                poinvl.setRtgdays((short) 0);
+                poinvl.setRtgamount(new BigDecimal(0.0));
+                poinvl.setRtgdatedue(new BigDecimal(0.0));
+                poinvl.setRtgamtover((short) 0);
+                poinvl.setRtgddtover((short) 0);
+                poinvl.setTaramount1(node.path("vatAmt").decimalValue());
+                poinvl.setTaramount2(new BigDecimal(0.0));
+                poinvl.setTaramount3(new BigDecimal(0.0));
+                poinvl.setTaramount4(new BigDecimal(0.0));
+                poinvl.setTaramount5(new BigDecimal(0.0));
+                poinvl.setTralloamt1(new BigDecimal("0.000"));
+                poinvl.setTralloamt2(new BigDecimal("0.000"));
+                poinvl.setTralloamt3(new BigDecimal("0.000"));
+                poinvl.setTralloamt4(new BigDecimal("0.000"));
+                poinvl.setTralloamt5(new BigDecimal("0.000"));
+
+// Setting values for TRRECVAMT fields
+                poinvl.setTrrecvamt1(node.path("vatAmt").decimalValue());
+                poinvl.setTrrecvamt2(new BigDecimal("0.000"));
+                poinvl.setTrrecvamt3(new BigDecimal("0.000"));
+                poinvl.setTrrecvamt4(new BigDecimal("0.000"));
+                poinvl.setTrrecvamt5(new BigDecimal("0.000"));
+                poinvl.setTrexpsamt1(new BigDecimal("0.000"));
+                poinvl.setTrexpsamt2(new BigDecimal("0.000"));
+                poinvl.setTrexpsamt3(new BigDecimal("0.000"));
+                poinvl.setTrexpsamt4(new BigDecimal("0.000"));
+                poinvl.setTrexpsamt5(new BigDecimal("0.000"));
+                poinvl.setRaxbase1(new BigDecimal("0.000"));
+                poinvl.setRaxbase2(new BigDecimal("0.000"));
+                poinvl.setRaxbase3(new BigDecimal("0.000"));
+                poinvl.setRaxbase4(new BigDecimal("0.000"));
+                poinvl.setRaxbase5(new BigDecimal("0.000"));
+                poinvl.setRaxamount1(new BigDecimal("0.000"));
+                poinvl.setRaxamount2(new BigDecimal("0.000"));
+                poinvl.setRaxamount3(new BigDecimal("0.000"));
+                poinvl.setRaxamount4(new BigDecimal("0.000"));
+                poinvl.setRaxamount5(new BigDecimal("0.000"));
+                poinvl.setRxrecvamt1(new BigDecimal("0.000"));
+                poinvl.setRxrecvamt2(new BigDecimal("0.000"));
+                poinvl.setRxrecvamt3(new BigDecimal("0.000"));
+                poinvl.setRxrecvamt4(new BigDecimal("0.000"));
+                poinvl.setRxrecvamt5(new BigDecimal("0.000"));
+                poinvl.setRxexpsamt1(new BigDecimal("0.000"));
+                poinvl.setRxexpsamt2(new BigDecimal("0.000"));
+                poinvl.setRxexpsamt3(new BigDecimal("0.000"));
+                poinvl.setRxexpsamt4(new BigDecimal("0.000"));
+                poinvl.setRxexpsamt5(new BigDecimal("0.000"));
+                poinvl.setRxalloamt1(new BigDecimal("0.000"));
+                poinvl.setRxalloamt2(new BigDecimal("0.000"));
+                poinvl.setRxalloamt3(new BigDecimal("0.000"));
+                poinvl.setRxalloamt4(new BigDecimal("0.000"));
+                poinvl.setRxalloamt5(new BigDecimal("0.000"));
+                poinvl.setUcismanual((short) 1);
+                poinvl.setWeightunit("");
+                poinvl.setWeightconv(new BigDecimal("1.0000"));
+                poinvl.setDefuweight(new BigDecimal("0.0000"));
+                poinvl.setDefextwght(new BigDecimal("0.0000"));
+                poinvl.setSerialqty(100);
+                poinvl.setLotqty(new BigDecimal("0.0000"));
+                poinvl.setSlitem((short) 1);
+                poinvl.setDetailnum(node.path("itemSeq").shortValue());
+                poinvl.setCaxable1((short) 1);
+                poinvl.setCaxable2((short) 1);
+                poinvl.setCaxable3((short) 1);
+                poinvl.setCaxable4((short) 1);
+                poinvl.setCaxable5((short) 1);
+            }
+        }
+    }
+    public void createPODocument(JsonNode sale, String ponumber,List<postPOItemsDTO>items){
+
+    }
+    public List<supplierPurchaseOrderDTO> returnPOs(){
+        List<supplierPurchaseOrderDTO> supplierPurchaseOrderDTOS = new ArrayList<>();
+        List<Poporh1> poporh1s = poporh1Repo.findIncomplete();
+
+        for (Poporh1 poporh1 : poporh1s) {
+           Optional<Apven> apven = apvenRepo.findByVendorid(poporh1.getVdcode());
+            supplierPurchaseOrderDTO purchaseOrderDTO = new supplierPurchaseOrderDTO();
+            List<supplierPurchaseOrderItems> supplierPurchaseOrderItems = new ArrayList<>();
+            List<Poporl> poporls = poporlRepo.findById(poporh1.getId());
+
+            purchaseOrderDTO.setPoNumber(poporh1.getPonumber());
+            purchaseOrderDTO.setVendorName(poporh1.getVdname());
+            purchaseOrderDTO.setVendorCode(poporh1.getVdcode());
+            purchaseOrderDTO.setTpin(apven.map(Apven::getBrn)
+                    .map(brn -> brn.replace(" ", ""))
+                    .filter(brnWithoutSpaces -> brnWithoutSpaces.length() == 10).orElse(null));
+            purchaseOrderDTO.setTaxableAmount(poporh1.getTaxbase1());
+            purchaseOrderDTO.setTax(poporh1.getTaxamount1());
+            purchaseOrderDTO.setTotalAmount(poporh1.getExtended());
+
+            for (Poporl poporl : poporls) {
+                supplierPurchaseOrderItems purchaseOrderItem = new supplierPurchaseOrderItems();
+                purchaseOrderItem.setItemCode(poporl.getItemno());
+                purchaseOrderItem.setItemName(poporl.getItemdesc());
+                purchaseOrderItem.setPrice(poporl.getUnitcost());
+                purchaseOrderItem.setTaxableAmount(poporl.getTaxbase1());
+                purchaseOrderItem.setTaxAmount(poporl.getTaxamount1());
+                purchaseOrderItem.setTotalAmount(poporl.getExtended());
+                purchaseOrderItem.setQuantity(poporl.getOqordered());
+                supplierPurchaseOrderItems.add(purchaseOrderItem);
+            }
+
+            purchaseOrderDTO.setItems(supplierPurchaseOrderItems);
+            supplierPurchaseOrderDTOS.add(purchaseOrderDTO);
+        }
+        return supplierPurchaseOrderDTOS;
+    }
     //Select purchases
     @Retryable( backoff = @Backoff(delay = 2000))
     public PurchasesResponse selectPurchase() {
@@ -1416,5 +2170,31 @@ Icitem icitem = icitemRepository.findByFmtitemno(poporl.getItemno());
     public String nextReceiptNo(){
         Poopt pt = pooptRepo.findByRatetype("SP");
         return pt.getRcpprefixd().replace(" ","") + pt.getRcpbodyd().replace(" ","");
+    }
+    public List<pendingPurchases> getPendingPurchases(){
+        List<Auditlog> auditlog = auditlogRepository.findDocumentIdsByTransactionTypeAndResponseCode("2");
+        List<pendingPurchases> pendingPurchasesList = new ArrayList<>();
+        for (Auditlog auditlog1 :auditlog){
+            pendingPurchases pendingPurchases = new pendingPurchases();
+            pendingPurchases.setInvoiceNumber(auditlog1.getDocumentId());
+            pendingPurchases.setResponseMessage(auditlog1.getResponseMessage());
+            pendingPurchases.setRequestDate(auditlog1.getRequestDate());
+            pendingPurchasesList.add(pendingPurchases);
+        }
+        return pendingPurchasesList;
+
+    }
+    public List<pendingPurchases> getPendingSales(){
+        List<Auditlog> auditlog = auditlogRepository.findDocumentIdsByTransactionTypeAndResponseCode("1");
+        List<pendingPurchases> pendingSalesList = new ArrayList<>();
+        for (Auditlog auditlog1 :auditlog){
+            pendingPurchases pendingPurchases = new pendingPurchases();
+            pendingPurchases.setInvoiceNumber(auditlog1.getDocumentId());
+            pendingPurchases.setResponseMessage(auditlog1.getResponseMessage());
+            pendingPurchases.setRequestDate(auditlog1.getRequestDate());
+            pendingSalesList.add(pendingPurchases);
+        }
+        return pendingSalesList;
+
     }
 }

@@ -60,9 +60,11 @@ public class HomeController {
 
 		List<importItemListDTO> response = service.getImports(refNumber);
 		List<Icitem> icitems = service.returnItems();
+		List<supplierPurchaseOrderDTO> purchaseOrderDTOS = service.returnPOs();
 		// Optionally, add data to the model if you need to display it on a Thymeleaf page
 		model.addAttribute("importData", response);
 		model.addAttribute("sageItems",icitems);
+		model.addAttribute("purchaseOrders", purchaseOrderDTOS);
 		model.addAttribute("refNo",refNumber);
 		// Return a view name (you can redirect or render a view as needed)
 		return "importResult";  // Replace with the appropriate view name
@@ -73,6 +75,19 @@ public class HomeController {
 			return "salesView";
 		}
 
+	@GetMapping("/pending-sales")
+	public String pendingSales(Model model){
+
+			 model.addAttribute("sales",service.getPendingSales());
+			 return "salesHistory";
+	}
+
+	@GetMapping("/pending-purchases")
+	public String pendingPurchases(Model model){
+
+		model.addAttribute("purchases",service.getPendingPurchases());
+		return "purchasesHistory";
+	}
 
 
 

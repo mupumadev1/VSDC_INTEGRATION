@@ -11,7 +11,7 @@
 	<div id="layoutSidenav_content">
 		<div class="container">
 			<br>
-			<p class="display-4">Sales</p>
+			<p class="display-4">Purchases</p>
 			<hr>
 
 			<!-- Add a row with a column to position the form -->
@@ -33,7 +33,7 @@
 
 			<br><br>
 			<div class="table-responsive">
-				<h2 class="text-center mb-4">All Pending Sales</h2>
+				<h2 class="text-center mb-4">All Pending Purchases</h2>
 			<table class="table table-bordered table-hover">
 				<thead class="thead-dark">
 				<tr>
@@ -44,7 +44,7 @@
 
 				</tr>
 				</thead>
-				<tbody th:if="${#lists.isEmpty(sales)}">
+				<tbody th:if="${#lists.isEmpty(purchases)}">
 				<tr>
 					<td colspan="10" style="color: red; text-align: center;">No Data found</td>
 				</tr>
@@ -54,7 +54,7 @@
 					<td th:text="${itemDto.invoiceNumber}"></td>
 					<td th:text="${itemDto.responseMessage}"></td>
 					<td th:text="${itemDto.requestDate}"></td>
-					<td><a th:href="@{http:localhost:8080/api/save-sale/{id}(id=${itemDto.invoiceNumber})}"
+					<td><a th:href="@{http:localhost:8080/api/save-purchase-po/{id}(id=${itemDto.invoiceNumber})}"
 						   class="btn btn-primary"> Resend </a></td>
 				</tr>
 				</tbody>
