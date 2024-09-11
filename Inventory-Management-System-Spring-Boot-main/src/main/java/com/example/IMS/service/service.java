@@ -1109,10 +1109,12 @@ public class service {
         Optional<Apven> apven = apvenRepo.findByVendorid(poporh1.getVdcode());
 
         // Instantiate the Poinvah object
-        PoinvahId id = new PoinvahId();
-        Poinvah poinvah = new Poinvah();
-        // Set properties on the Poinvah object
-        poinvah.setId(id);
+        PoinvahId poinvahId = new PoinvahId():
+        poinvahId.setDayendseq(dayEndNo());
+        poinvahId.setInvahseq(BigDecimal.valueOf(1));
+        Poinvah poinvah = new Poinvah():
+        poinvah.setId(poinvahId);
+
         poinvah.setAudtdate(currentDate());
         poinvah.setAudttime(currentTime());
         poinvah.setAudtuser("ADMIN");
@@ -1191,11 +1193,13 @@ public class service {
 
 
         // Create an instance of Poinval
-        Poinval poinval = new Poinval();
-        poinval.setId(poinvalId);
+
+        PoinvalId poinvalId = new PoinvalId()
         poinvalId.setDayendseq(dayEndNo());
-        poinval.setInvahseq((short) 1);
-        poinval.setinvalseq(new BigDecimal("0"));
+        poinvalId.setInvahseq(BigDecimal.valueOf(1));
+        poinvalId.setInvalseq(poinvalRepository.findByInval());
+        Poinval poinval = new Poinval();
+
         poinval.setAudtdate(currentDate());
         poinval.setAudttime(currentTime());
         poinval.setAudtuser("ADMIN");
@@ -1690,8 +1694,11 @@ public class service {
 
         //Instantiate Poinvl
         PoinvlId poinvlId = new PoinvlId();
-        poinvlId.setInvhseq(maxID.getId().add(BigDecimal.valueOf(2)));
+        poinvlId.setInvhseq(maxID.getId().add(BigDecimal.valueOf(1)));
+        poinvlId.setInvlrev(BigDecimal.valueOf(1));
         Poinvl poinvl = new Poinvl();
+        poinvl.setId(poinvlId);
+
         poinvl.setAudtdate(currentDate());
         poinvl.setAudttime(currentTime());
         poinvl.setAudtuser("ADMIN");
@@ -1885,10 +1892,12 @@ public class service {
 
 
         // Instantiate the Poinvn entity
-        Poinvn poinvn = new Poinvn();
         PoinvnId poinvnId = new PoinvnId();
+        poinvnId.setInvhseq(maxID.getId().add(BigDecimal.valueOf(2)));
         poinvnId.setInvlseq(maxsqlID());
+        Poinvn poinvn = new Poinvn();
         poinvn.setId(poinvnId);
+
 
         poinvn.setAudtdate(currentDate());
         poinvn.setAudttime(currentTime());
