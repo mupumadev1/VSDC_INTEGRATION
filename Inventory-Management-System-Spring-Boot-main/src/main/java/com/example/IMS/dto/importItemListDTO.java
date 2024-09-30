@@ -14,6 +14,8 @@ public class importItemListDTO {
     private String dclNo;
     private String hsCd;
     private String itemNm;
+    private String dclRefNum;
+    private String itemCd;
     private String imptItemsttsCd;
     private String orgnNatCd;
     private String exptNatCd;

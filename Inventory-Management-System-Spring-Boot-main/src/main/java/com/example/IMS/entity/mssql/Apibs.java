@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 @Table(name = "APIBS")
 public class Apibs {
     @EmbeddedId
-    private ApibId id;
+    private ApibsId id;
 
     @Column(name = "AUDTDATE", nullable = false, precision = 9)
     private BigDecimal audtdate;

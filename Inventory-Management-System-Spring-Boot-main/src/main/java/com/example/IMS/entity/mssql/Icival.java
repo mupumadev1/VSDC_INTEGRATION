@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Entity
-@Table(name = "ICIVAL", schema = "dbo")
+@Table(name = "ICIVAL")
 public class Icival {
     @EmbeddedId
     private IcivalId id;

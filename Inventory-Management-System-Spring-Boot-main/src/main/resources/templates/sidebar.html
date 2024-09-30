@@ -25,12 +25,12 @@
 									aria-labelledby="headingOne"
 									data-parent="#sidenavAccordionPages">
 									<nav class="sb-sidenav-menu-nested nav">
-										<a id="loadStandardCodes" class="nav-link" href="#" >Load Standard Codes</a>
+										<a id="loadStandardCodes" class="nav-link">Load Standard Codes</a>
 									</nav>
 								</div>
 								<a class="nav-link collapsed" href="#" data-toggle="collapse"
 									data-target="#pagesCollapseItem" aria-expanded="false"
-									aria-controls="pagesCollapseItem"> Import Items
+									aria-controls="pagesCollapseItem"> Items
 									<div class="sb-sidenav-collapse-arrow">
 										<i class="fas fa-angle-down"></i>
 									</div>
@@ -39,8 +39,9 @@
 									aria-labelledby="headingOne"
 									data-parent="#sidenavAccordionPages">
 									<nav class="sb-sidenav-menu-nested nav">
-										<a class="nav-link" href="">Load Import Items</a>
-										<a class="nav-link" href="">View Import Items</a>
+										<a class="nav-link" th:href="@{/import}">Get import data</a>
+										<!--<a class="nav-link" th:href="@{/item-list}">Stock item list</a>-->
+
 									</nav>
 								</div>
 								<a class="nav-link collapsed" href="#" data-toggle="collapse"
@@ -54,7 +55,9 @@
 									aria-labelledby="headingOne"
 									data-parent="#sidenavAccordionPages">
 									<nav class="sb-sidenav-menu-nested nav">
-										<a class="nav-link" href="">View Purchases</a>
+										<a class="nav-link" th:href="@{/purchases}">View Purchases</a>
+										<a class="nav-link" th:href="@{/pending-purchases}">View Pending Purchases(Non Smart Invoicing)</a>
+										<a class="nav-link" th:href="@{/failed-purchases}">View Failed Purchases(Non Smart Invoicing)</a>
 
 									</nav>
 								</div>
@@ -69,46 +72,12 @@
 									aria-labelledby="headingOne"
 									data-parent="#sidenavAccordionPages">
 									<nav class="sb-sidenav-menu-nested nav">
-										<a class="nav-link" href="">View sales</a>
-									</nav>
-								</div>
-								<a class="nav-link collapsed" href="#" data-toggle="collapse"
-								   data-target="#pagesCollapseTransactions" aria-expanded="false"
-								   aria-controls="pagesCollapseTransactions"> Transaction Management
-									<div class="sb-sidenav-collapse-arrow">
-										<i class="fas fa-angle-down"></i>
-									</div>
-								</a>
-								<div class="collapse" id="pagesCollapseTransactions"
-									 aria-labelledby="headingOne"
-									 data-parent="#sidenavAccordionPages">
-									<nav class="sb-sidenav-menu-nested nav">
-										<a class="nav-link" href="../User Management/ManageUserAccount.html">Sales</a>
-										<a class="nav-link" href="../User Management/AddNewUser.html">Purchases</a>
-
+										<a class="nav-link" th:href="@{/pending-sales}">View pending sales</a>
+										<a class="nav-link" th:href="@{/failed-sales}">View failed sales</a>
 									</nav>
 								</div>
 
-								<a class="nav-link collapsed" href="#" data-toggle="collapse"
-									data-target="#pagesCollapseUser" aria-expanded="false"
-									aria-controls="pagesCollapseUser"> User Management
-									<div class="sb-sidenav-collapse-arrow">
-										<i class="fas fa-angle-down"></i>
-									</div>
-								</a>
-								<div class="collapse" id="pagesCollapseUser"
-									aria-labelledby="headingOne"
-									data-parent="#sidenavAccordionPages">
-									<nav class="sb-sidenav-menu-nested nav">
-										<a class="nav-link"
-											href="../User Management/ManageUserAccount.html">User
-											Account Management</a> <a class="nav-link"
-											href="../User Management/AddNewUser.html">Add a new User</a>
-										<a class="nav-link"
-											href="../User Management/ForgotPassword.html">Change
-											Password</a>
-									</nav>
-								</div>
+
 							</nav>
 						</div>
 					</div>
@@ -121,6 +90,7 @@
 		</div>
 
 	</div>
-
+	<script >
+	</script>
 </body>
 </html>

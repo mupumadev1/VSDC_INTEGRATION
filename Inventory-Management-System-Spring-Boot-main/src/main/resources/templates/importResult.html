@@ -2,12 +2,6 @@
 <html lang="en">
 <head>
     <div th:replace="header :: myHeader"></div>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Add jQuery for search functionality -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <!-- Bootstrap's select2 for searchable dropdown -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </head>
 <body class="sb-nav-fixed">
 <div th:replace="navbar :: myNavbar"></div>
@@ -25,9 +19,9 @@
                     <h2 class="text-center m-4">Import Information</h2>
                 </div>
                 <div class="col d-flex align-items-end justify-content-end">
-                    <form class="form-inline" th:action="@{/imports}" method="post" >
+                    <form class="form-inline" th:action="@{/imports}" method="get" >
                         <div class="input-group">
-                            <input class="form-control" name="refNumber" type="text" th:placeholder="${refNo}"
+                            <input class="form-control" name="refNumber" id="refNumber" type="text" th:data-refNumber ="refNo" th:placeholder="${refNo}"
                                    aria-label="Search" aria-describedby="basic-addon2" />
                             <div class="input-group-append">
                                 <button class="btn btn-primary" type="submit" id="import-submit">
@@ -56,7 +50,7 @@
                     <th>Total Weight</th>
                     <th>Supplier Name</th>
                     <th>Corresponding Sage Item</th>
-                    <th>Sage Purchase Order</th>
+                    <th>Sage Receipt</th>
                     <th>Action</th>
                 </tr>
                 </thead>
@@ -69,22 +63,55 @@
                     <td th:text="${item.hsCd}"></td>
                     <td th:text="${item.itemNm}"></td>
                     <td th:text="${item.qty}"></td>
-                    <td th:text="${item.totWt}"></td>
+                    <td th:text="${item.invcFcurExcrt}"></td>
                     <td th:text="${item.spplrNm}"></td>
-                    <td>
+                    <td class="d-none"th:text="${item.orgnNatCd}"></td>
+                    <td class="d-none"th:text="${item.exptNatCd}"></td>
+                    <td class="d-none"th:text="${item.pkg}"></td>
+                    <td class="d-none"th:text="${item.pkgUnitCd}"></td>
+                    <td class="d-none"th:text="${item.qtyUnitCd}"></td>
+                    <td class="d-none"th:text="${item.invcFcurAmt}"></td>
+                    <td class="d-none"th:text="${item.invcFcurExcrt}"></td>
+                    <td class="d-none"th:text="${item.dclRefNum}"></td>
+                    <td class="d-none"th:text="${item.itemSeq}"></td>
+                   <td>
                         <select class="form-control sage-dropdown" name="sageItem" id="sageItem_${item.id}">
                             <option value="" disabled selected>Select a Sage item...</option>
-                            <!-- Populate dropdown with 'sageItems' -->
+                             Populate dropdown with 'sageItems'
                             <option th:each="sageItem : ${sageItems}" th:value="${sageItem.itemno}" th:text="${sageItem.desc}">
                             </option>
                         </select>
-                    </td>
-                    <td style="text-align: center" ><button class="btn btn-info" data-toggle="modal" data-target="#purchaseOrderModal" id="purchase-orders">select</button></td>
+                    </td>--
+                    <td style="text-align: center" ><button class="btn btn-info select-button " data-toggle="modal" data-target="#purchaseOrderModal" th:data-name="${item.spplrNm}"  id="purchase-orders">select</button></td>
 
-                    <td><div class="row"><a class="btn btn-dark col">Confirm</a><a class="btn btn-dark col">Reject</a></div></td>
+                    <td style="text-align: center"><div class="d-flex">
+                        <button class="btn btn-outline-info btn-sm post-button mr-1"  data-value="3"><i class="fas fa-check"></i></button>
+                        <button class="btn btn-outline-danger reject-button btn-sm" data-value="4" data-toggle="modal" data-target="#rejectModal"><i class="fas fa-times"></i></button>
+                    </div></td>
                 </tr>
                 </tbody>
             </table>
+                <div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                    <div class="modal-dialog d-flex justify-content-center align-items-center" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="rejectModalLabel">Give reason for rejecting import</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body d-flex justify-content-center align-items-center">
+                                <!-- Dynamic purchase order details go here -->
+                                <div id="reject-modal-content" class="w-100">
+                                    <form class="d-flex flex-column justify-content-center align-items-center">
+                                        <input type="text" name="rejectReason" class="input form-control mb-3 w-75">
+                                        <button type="button" id="save" class="btn btn-info w-50 save">Save</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="modal fade" id="purchaseOrderModal" tabindex="-1" role="dialog" aria-labelledby="purchaseOrderModalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-xl" role="document">
                         <div class="modal-content">
@@ -144,34 +171,435 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" >
+        <div class="modal-content mx-auto">
+            <div class="modal-body text-center">
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <p class="mt-2" id="loadingMessage">Loading, please wait...</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script type="text/javascript">
+
     const modalRows = document.querySelectorAll('#purchaseOrderModal tbody tr');
     $(document).ready(function() {
-        // Initialize select2 for all dropdowns
-        $('.sage-dropdown').select2({
+        /*Initialize select2 for all dropdowns
+        $('.form-control.sage-dropdown').select2({
             placeholder: 'Select a Sage item...',
             allowClear: true
+        });*/
+
+    let selectedButton;
+    let selectElement ;
+
+    function isDuplicate(dataToCheck) {
+        return elems.some(function(elem) {
+            console.log(elem)
+            return elem.hsCd === dataToCheck.hsCd && elem.actionValue === dataToCheck.actionValue  // Adjust criteria as needed
+        });
+    }
+        let modalId;
+    $('[class*="btn btn-info select-button"]').on('click', function() {
+        selectedButton = this;
+        selectElement = $(selectedButton).closest('tr').find('select.sage-dropdown')
+       // selectedPost = $(selectedButton).closest('tr').find('button.post-button')
+
+        // Get the supplier TPIN and supplier name from the clicked button's data attributes
+        let tpin = $(this).data('tpin');
+        let supplierName = $(this).data('name') || "";;
+        let modalId = $(this).data('target');
+
+        // Make an AJAX request to the backend
+        $.ajax({
+            url: '/api/import_receipts', // Adjust the URL to your backend endpoint
+            method: 'GET',
+            data: {
+                supplierName: supplierName // Send the supplier name as a query parameter
+            },
+            success: function(response) {
+                // Clear previous content in the modal body
+                $('#modal-body-content').empty();
+
+                // Check if there are purchase orders
+                if (response && response.length > 0) {
+                    // Populate the modal with the purchase orders
+                    response.forEach(function(po) {
+                        let row = `
+                            <tr>
+                                <td>${po.poNumber}</td>
+                                <td>${po.vendorName}</td>
+                                <td>${po.taxableAmount}</td>
+                                <td>${po.tax}</td>
+                                <td>${po.totalAmount}</td>
+                                <td>
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th>Item Code</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+                        po.items.forEach(function(item) {
+                            row += `
+                                <tr class="nested-content">
+                                    <td>${item.itemName}</td>
+                                    <td>${item.itemCode}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>${item.price}</td>
+                                </tr>
+                            `;
+                        });
+                        row += `
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        `;
+                        $('#modal-body-content').append(row);
+                    });
+                    addPOEventListener();
+                } else {
+                    // Handle case where no purchase orders are found
+                    $('#modal-body-content').append('<tr><td colspan="6">No purchase orders found.</td></tr>');
+                }
+
+                // Show the modal
+                $(modalId).modal('show');
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching purchase orders:', error);
+                // Optionally, show an error message in the modal
+                $('#modal-body-content').empty().append('<tr><td colspan="6">Error fetching purchase orders.</td></tr>');
+                $(modalId).modal('show');
+            }
         });
     });
-
-
     // Add click event listener to each row
-    modalRows.forEach(row => {
-        row.addEventListener('click', () => {
-            // Get the selected PO number
-            const poNumber = row.querySelector('td:first-child').textContent;
+    function addPOEventListener() {
+        let poNumber = "";
 
-            // Update the button text with the selected PO number
-            const selectButton = document.getElementById('purchase-orders');
-            selectButton.textContent = poNumber;
+        // Add click event listener to each row in the modal
+        const modalRows = document.querySelectorAll('#modal-body-content tr');
+        modalRows.forEach(row => {
+            row.addEventListener('click', () => {
+                // Get the selected PO number
 
-            const postButton = document.getElementById('post-button');
-            postButton.setAttribute('data-po', poNumber);
+                let newSelect = $('<select>')
+                    .addClass('form-control sage-dropdown')
+                    .attr('name', 'sageItem')
+                    .append(
+                        $('<option>')
+                            .attr('value', '')
+                            .attr('disabled', true)
+                            .attr('selected', true)
+                            .text('Select a Sage item...')
+                    );
+                // Get the nested table in the clicked row
+                let nestedTables = row.querySelectorAll('.table.table-sm.table-bordered');
 
-            // Close the modal
-            $('#purchaseOrderModal').modal('hide');
+                // Check if the nested table is found
+                if (nestedTables.length === 0) {
+                    console.error('Nested table not found.');
+                    return; // Exit if the nested table is not found
+                }
+                nestedTables.forEach(nestedTable => {
+                    // Get all rows inside the nested table's tbody
+                    let nestedRows = nestedTable.querySelectorAll('tbody tr .nested-content');
+                    console.log(nestedRows)
+                    // Iterate over each row in the nested table
+                    nestedRows.forEach(nestedRow => {
+                        let itemName = nestedRow.querySelector('td:first-child').textContent; // Get the item name
+                        let itemCode = nestedRow.querySelector('td:nth-child(2)').textContent; // Get the item code
+
+
+                        // Create a new option element and append it to the select element
+                        newSelect.append(
+                            $('<option>')
+                                .attr('value', itemCode)
+                                .text(itemCode)
+                        ); // Append the new option to the select element
+                    });
+                });
+                // Populate the select element with the item names and codes from the nested table
+                // Log
+                // Replace the existing select element in the original table with the new one
+                if (selectElement) {
+                    selectElement.replaceWith(newSelect);
+                }
+
+                poNumber = row.querySelector('td:first-child').textContent;
+                if (selectedButton) {
+                    $(selectedButton).text(poNumber); // Update the button text
+                }
+
+
+
+                // Close the modal
+                $('#purchaseOrderModal').modal('hide');
+            });
         });
+
+    }
+    let elems = [];
+
+    $('[class*="btn btn-outline-info btn-sm post-button mr-1"]').on('click', function() {
+        console.log("clicked")
+        let $row = $(this).closest('tr');
+
+        // Get the clicked button's value (3 for Confirm, 4 for Reject)
+        let actionValue = $(this).data('value');
+        let sageItems =$row.find('select[name="sageItem"]').val();
+        let poNumber = $(selectedButton).text(); // Retrieve the PO number from the selected button
+        if (!poNumber) {
+            alert('Please select a Sage receipt.');
+            return;
+        }
+        if (sageItems.length === 0) {
+            alert('Please select a Sage item.');
+            return; // Exit the function if no Sage item is selected
+        }
+        // Get the parent row of the clicked button
+
+        // Gather all necessary data from the row
+        let taskCd = $row.find('td:nth-child(1)').text();
+        let dclDe = $row.find('td:nth-child(2)').text();
+        let dclNo = $row.find('td:nth-child(3)').text();
+        let hsCd = $row.find('td:nth-child(4)').text();
+        let itemNm = $row.find('td:nth-child(5)').text();
+        let qty = $row.find('td:nth-child(6)').text();
+        let totWt = $row.find('td:nth-child(7)').text();
+        let spplrNm = $row.find('td:nth-child(8)').text();
+        let sageItem = $row.find('select[name="sageItem"]').val(); // Get selected value from dropdown
+        let orgnNatCd = $row.find('td:nth-child(9)').text(); // Hidden field
+        let exptNatCd = $row.find('td:nth-child(10)').text(); // Hidden field
+        let pkg = $row.find('td:nth-child(11)').text(); // Hidden field
+        let pkgUnitCd = $row.find('td:nth-child(12)').text(); // Hidden field
+        let qtyUnitCd = $row.find('td:nth-child(13)').text(); // Hidden field
+        let invcFcurAmt = $row.find('td:nth-child(14)').text(); // Hidden field
+        let invcFcurExcrt = $row.find('td:nth-child(15)').text(); // Hidden field
+        let dclRefNum = $row.find('td:nth-child(16)').text(); // Hidden field
+        let itemSeq = $row.find('td:nth-child(17)').text(); // Hidden field
+         // Hidden field
+
+        // Create an object with all the gathered data
+        let dataToSend = {
+            taskCd: taskCd,
+            dclDe: dclDe,
+            dclNo: dclNo,
+            hsCd: hsCd,
+            itemNm: itemNm,
+            qty: qty,
+            totWt: totWt,
+            spplrNm: spplrNm,
+            orgnNatCd: orgnNatCd,         // Include hidden field data
+            exptNatCd: exptNatCd,         // Include hidden field data
+            pkg: pkg,                     // Include hidden field data
+            pkgUnitCd: pkgUnitCd,         // Include hidden field data
+            qtyUnitCd: qtyUnitCd,         // Include hidden field data
+            invcFcurAmt: invcFcurAmt,     // Include hidden field data
+            invcFcurExcrt: invcFcurExcrt,     // Include hidden field data
+            sageItem: sageItem,
+            actionValue: actionValue,
+            recieptNo:poNumber,
+            dclRefNum:dclRefNum,
+            itemSeq:itemSeq
+        }
+        if (dataToSend !== {}){
+            $.ajax({
+                url : `/post-imports`, // Replace with your backend endpoint URL
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(dataToSend),
+                success: function(response) {
+                    console.log('Data posted successfully:', response);
+                    alert('Data posted successfully!');
+                    window.location.reload();
+                    // Optionally, handle success (e.g., refresh table, close modal)
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error posting data:', error);
+                    alert('An error occurred while posting data.');
+                    // Optionally, handle error (e.g., show error message)
+                }
+            });
+        }
+       /* if (!isDuplicate(dataToSend)) {
+            elems.push(dataToSend);
+            console.log("Data added:", dataToSend);
+        } else {
+            console.log("Duplicate entry found, not adding:", dataToSend);
+            alert("This entry already exists!");
+        }
+        console.log(elems)*/
+
+    })
+    $('[class*="btn btn-outline-danger reject-button btn-sm"]').on('click', function() {
+        let $row = $(this).closest('tr');
+        let modalId = $(this).data('target');
+        // Get the clicked button's value (3 for Confirm, 4 for Reject)
+        let actionValue = $(this).data('value');
+        let sageItems = $row.find('select[name="sageItem"]').val();
+        let poNumber = $(selectedButton).text(); // Retrieve the PO number from the selected button
+        if (!poNumber) {
+            alert('Please select a Sage receipt.');
+            return;
+        }
+        if (sageItems.length === 0) {
+            alert('Please select a Sage item.');
+            return; // Exit the function if no Sage item is selected
+        }
+        $(modalId).modal('show');
+
+        // When the modal "Save" button is clicked
+        $('[class*="btn btn-info w-50 save"]').on('click', function () {
+
+            // Get the parent row of the clicked button
+
+            // Gather all necessary data from the row
+            let remark = $(modalId).find('input[name="rejectReason"]').val();
+            // Check if the remark is null or an empty string
+            if (!remark) {
+                alert('Please provide a reason for rejection.');
+                return; // Exit the function if remark is empty
+            }
+
+
+            let taskCd = $row.find('td:nth-child(1)').text();
+            let dclDe = $row.find('td:nth-child(2)').text();
+            let dclNo = $row.find('td:nth-child(3)').text();
+            let hsCd = $row.find('td:nth-child(4)').text();
+            let itemNm = $row.find('td:nth-child(5)').text();
+            let qty = $row.find('td:nth-child(6)').text();
+            let totWt = $row.find('td:nth-child(7)').text();
+            let spplrNm = $row.find('td:nth-child(8)').text();
+            let sageItem = $row.find('select[name="sageItem"]').val(); // Get selected value from dropdown
+            let orgnNatCd = $row.find('td:nth-child(9)').text(); // Hidden field
+            let exptNatCd = $row.find('td:nth-child(10)').text(); // Hidden field
+            let pkg = $row.find('td:nth-child(11)').text(); // Hidden field
+            let pkgUnitCd = $row.find('td:nth-child(12)').text(); // Hidden field
+            let qtyUnitCd = $row.find('td:nth-child(13)').text(); // Hidden field
+            let invcFcurAmt = $row.find('td:nth-child(14)').text(); // Hidden field
+            let invcFcurExcrt = $row.find('td:nth-child(15)').text(); // Hidden field
+            let dclRefNum = $row.find('td:nth-child(16)').text(); // Hidden field
+            let itemSeq = $row.find('td:nth-child(17)').text(); // Hidden field
+            // Hidden field
+
+            // Create an object with all the gathered data
+            let dataToSend = {
+                taskCd: taskCd,
+                dclDe: dclDe,
+                dclNo: dclNo,
+                hsCd: hsCd,
+                itemNm: itemNm,
+                remark: remark,
+                qty: qty,
+                totWt: totWt,
+                spplrNm: spplrNm,
+                orgnNatCd: orgnNatCd,         // Include hidden field data
+                exptNatCd: exptNatCd,         // Include hidden field data
+                pkg: pkg,                     // Include hidden field data
+                pkgUnitCd: pkgUnitCd,         // Include hidden field data
+                qtyUnitCd: qtyUnitCd,         // Include hidden field data
+                invcFcurAmt: invcFcurAmt,     // Include hidden field data
+                invcFcurExcrt: invcFcurExcrt,     // Include hidden field data
+                sageItem: sageItem,
+                actionValue: actionValue,
+                recieptNo: poNumber,
+                dclRefNum,dclRefNum,
+                itemSeq,itemSeq
+            }
+            if (dataToSend !== {}) {
+                $.ajax({
+                    url: `/post-imports-reject`, // Replace with your backend endpoint URL
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dataToSend),
+                    success: function (response) {
+                        console.log('Data posted successfully:', response);
+                        alert('Data posted successfully!');
+                        $(modalId).modal('hide');
+                        window.location.reload();
+
+                        // Optionally, handle success (e.g., refresh table, close modal)
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error posting data:', error);
+                        alert('An error occurred while posting data.');
+                        $(modalId).modal('hide');
+                        // Optionally, handle error (e.g., show error message)
+                    }
+                });
+            }
+            /* if (!isDuplicate(dataToSend)) {
+            elems.push(dataToSend);
+            console.log("Data added:", dataToSend);
+        } else {
+            console.log("Duplicate entry found, not adding:", dataToSend);
+            alert("This entry already exists!");
+        }
+        console.log(elems)*/
+
+        })
+    })
+
+      /*  $('#import-post').on('click', function(){
+            console.log("clicked")
+            if (dataToSend !== {}){
+                $.ajax({
+                    url : `/post-imports`, // Replace with your backend endpoint URL
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dataToSend),
+                    success: function(response) {
+                        console.log('Data posted successfully:', response);
+                        alert('Data posted successfully!');
+                        // Optionally, handle success (e.g., refresh table, close modal)
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error posting data:', error);
+                        alert('An error occurred while posting data.');
+                        // Optionally, handle error (e.g., show error message)
+                    }
+                });
+            }
+
+
+        })*/
+        const popUp = document.getElementById('loadStandardCodes')
+        if (popUp) {
+            popUp.addEventListener('click', function (e) {
+                e.preventDefault();
+                let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+                let loadingMessage = document.getElementById('loadingMessage');
+                loadingModal.show();
+                fetch('http://localhost:8086/create-packaging-unit')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Handle the response (if needed)
+                        loadingMessage.textContent = data.message
+                        setTimeout(() => {
+                            loadingModal.hide();
+                        }, 2000);
+                    })
+                    .catch(error => {
+                        // Handle errors (if needed)
+                        console.error(error);
+
+                        // Hide the loading modal
+                        loadingModal.hide();
+                    });
+
+            })
+        }
     });
 </script>
 </body>

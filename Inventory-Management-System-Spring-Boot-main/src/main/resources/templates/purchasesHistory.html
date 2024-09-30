@@ -17,7 +17,7 @@
 			<!-- Add a row with a column to position the form -->
 			<div class="row">
 				<div class="col text-right">
-					<form class="form-inline">
+					<!--<form class="form-inline">
 						<div class="input-group">
 							<input class="form-control" type="text" placeholder="Invoice number..."
 								   aria-label="Search" aria-describedby="basic-addon2" />
@@ -27,11 +27,12 @@
 								</button>
 							</div>
 						</div>
-					</form>
+					</form>-->
 				</div>
 			</div>
 
 			<br><br>
+
 			<div class="table-responsive">
 				<h2 class="text-center mb-4">All Pending Purchases</h2>
 			<table class="table table-bordered table-hover">
@@ -44,18 +45,18 @@
 
 				</tr>
 				</thead>
-				<tbody th:if="${#lists.isEmpty(purchases)}">
+				<tbody th:if="${#lists.isEmpty(pendingPurchases)}">
 				<tr>
 					<td colspan="10" style="color: red; text-align: center;">No Data found</td>
 				</tr>
 				</tbody>
-				<tbody id="myTable">
-				<tr th:each="itemDto : ${sales}">
+				<tbody id="myOtherTable">
+				<tr th:each="itemDto : ${pendingPurchases}">
 					<td th:text="${itemDto.invoiceNumber}"></td>
 					<td th:text="${itemDto.responseMessage}"></td>
 					<td th:text="${itemDto.requestDate}"></td>
-					<td><a th:href="@{http:localhost:8080/api/save-purchase-po/{id}(id=${itemDto.invoiceNumber})}"
-						   class="btn btn-primary"> Resend </a></td>
+					<td><a th:attr="data-invnumber=${itemDto.invoiceNumber}"
+						   class="btn btn-primary resendButton"> Resend </a></td>
 				</tr>
 				</tbody>
 			</table>
@@ -64,5 +65,65 @@
 
 	</div>
 </div>
+<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document" >
+		<div class="modal-content mx-auto">
+			<div class="modal-body text-center">
+				<div class="spinner-border" role="status">
+					<span class="sr-only">Loading...</span>
+				</div>
+				<p class="mt-2" id="loadingMessage">Loading, please wait...</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	$(document).ready(function() {
+		$('.btn.btn-primary.resendButton').click(function () {
+			var invNumber = $(this).data('invnumber');
+
+			$.ajax({
+				url: 'http://localhost:8000/api/save-purchase-po-single',
+				type: 'POST', // Ensure this is set to POST
+				contentType: 'application/json', // Set content type to JSON
+				data: JSON.stringify({invnumber: invNumber}),
+				success: function (response) {
+					alert('Response from server: ' + response);
+					window.location.reload();
+				},
+				error: function (xhr, status, error) {
+					alert('Error: ' + error);
+				}
+			});
+		});
+		const popUp = document.getElementById('loadStandardCodes')
+		if (popUp) {
+			popUp.addEventListener('click', function (e) {
+				e.preventDefault();
+				let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+				let loadingMessage = document.getElementById('loadingMessage');
+				loadingModal.show();
+				fetch('http://localhost:8086/create-packaging-unit')
+						.then(response => response.json())
+						.then(data => {
+							// Handle the response (if needed)
+							loadingMessage.textContent = data.message
+							setTimeout(() => {
+								loadingModal.hide();
+							}, 2000);
+						})
+						.catch(error => {
+							// Handle errors (if needed)
+							console.error(error);
+
+							// Hide the loading modal
+							loadingModal.hide();
+						});
+
+			})
+		}
+	})
+</script>
 </body>
 </html>

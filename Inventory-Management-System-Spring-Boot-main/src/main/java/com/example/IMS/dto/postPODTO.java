@@ -7,7 +7,13 @@ import java.util.Map;
 
 @Data
 public class postPODTO {
-        private int invnumber;
-        private String po_number;
-        private List<postPOItemsDTO> item_details;
+        private String supplierTpin;
+        private String supplierName;
+        private String invoiceNumber;
+        private String poNumber;
+        private String remark;
+        private List<SageItemDTO> sageItems;;
+
+        // Getters and Setters
+
 }

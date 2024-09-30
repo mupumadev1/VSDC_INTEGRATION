@@ -9,5 +9,6 @@ public interface Apven_repo extends JpaRepository<Apven, Integer> {
 
 
     Optional<Apven> findByVendorid(String vdcode);
+    Optional<Apven> findByVendnameContainingIgnoreCase(String vname);
     Optional<Apven> findByBrnAndVendname(String brn,String name);
 }

@@ -9,19 +9,17 @@
         if (popUp) {
             popUp.addEventListener('click', function (e) {
                 e.preventDefault();
-                var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+                let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+                let loadingMessage = document.getElementById('loadingMessage');
                 loadingModal.show();
-                fetch('http://localhost:8000/api/create-packaging-unit')
+                fetch('http://localhost:8086/create-packaging-unit')
                     .then(response => response.json())
                     .then(data => {
                         // Handle the response (if needed)
-                        console.log(data);
-
-                        // Optionally, you can redirect or update the page
-                        // window.location.href = data.redirectUrl;
-
-                        // Hide the loading modal
-                        loadingModal.hide();
+                        loadingMessage.textContent = data.message
+                        setTimeout(() => {
+                            loadingModal.hide();
+                        }, 2000);
                     })
                     .catch(error => {
                         // Handle errors (if needed)
@@ -33,7 +31,6 @@
 
             })
         }
-
     // Add active state to sidbar nav links
     var path = window.location.href; // because the 'href' property of the DOM element is the absolute path
         $("#layoutSidenav_nav .sb-sidenav a.nav-link").each(function() {

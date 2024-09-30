@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Entity
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 @Table(name = "APIBC")
 public class Apibc {

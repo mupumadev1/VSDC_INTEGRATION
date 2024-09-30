@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<div th:replace="header :: myHeader"></div>
+</head>
+<body class="sb-nav-fixed">
+<div th:replace="navbar :: myNavbar"></div>
+<div id="layoutSidenav">
+	<div th:replace="sidebar :: mySidebar"></div>
+
+	<div id="layoutSidenav_content">
+		<div class="container">
+			<br>
+			<p class="display-4">Purchases</p>
+			<hr>
+
+			<!-- Add a row with a column to position the form -->
+			<div class="row">
+				<div class="col text-right">
+					<!--<form class="form-inline">
+						<div class="input-group">
+							<input class="form-control" type="text" placeholder="Invoice number..."
+								   aria-label="Search" aria-describedby="basic-addon2" />
+							<div class="input-group-append">
+								<button class="btn btn-primary" type="button">
+									<i class="fas fa-search"></i>
+								</button>
+							</div>
+						</div>
+					</form>-->
+				</div>
+			</div>
+
+			<br><br>
+
+			<div class="table-responsive">
+				<h2 class="text-center mb-4">All Pending Purchases</h2>
+				<table class="table table-bordered table-hover">
+					<thead class="thead-dark">
+					<tr>
+						<th>Invoice Number</th>
+						<th>Remarks</th>
+						<th>Date</th>
+						<th>Actions</th>
+
+					</tr>
+					</thead>
+					<tbody th:if="${#lists.isEmpty(purchases)}">
+					<tr>
+						<td colspan="10" style="color: red; text-align: center;">No Data found</td>
+					</tr>
+					</tbody>
+					<tbody id="myTable">
+					<tr th:each="itemDto : ${pendingPurchases}">
+						<td th:text="${itemDto.invoiceNumber}"></td>
+						<td th:text="${itemDto.responseMessage}"></td>
+						<td th:text="${itemDto.requestDate}"></td>
+						<td><a th:href="@{http:localhost:8080/api/save-purchase-po/{id}(id=${itemDto.invoiceNumber})}"
+							   class="btn btn-primary"> Send </a></td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+	</div>
+</div>
+<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document" >
+		<div class="modal-content mx-auto">
+			<div class="modal-body text-center">
+				<div class="spinner-border" role="status">
+					<span class="sr-only">Loading...</span>
+				</div>
+				<p class="mt-2" id="loadingMessage">Loading, please wait...</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+
+</script>
+</body>
+</html>

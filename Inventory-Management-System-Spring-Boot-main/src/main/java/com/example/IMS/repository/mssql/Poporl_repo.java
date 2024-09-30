@@ -10,5 +10,7 @@ import java.util.List;
 public interface Poporl_repo extends JpaRepository<Poporl, Integer> {
     @Query(value = "SELECT * FROM Poporl WHERE PORHSEQ = :id",nativeQuery = true)
     List<Poporl> findById(BigDecimal id);
+    @Query(value = "SELECT * FROM Poporl WHERE PORHSEQ = :id and ITEMDESC = :itemno",nativeQuery = true)
+    Poporl findByIdAndItemdesc(BigDecimal id, String itemno);
 
 }

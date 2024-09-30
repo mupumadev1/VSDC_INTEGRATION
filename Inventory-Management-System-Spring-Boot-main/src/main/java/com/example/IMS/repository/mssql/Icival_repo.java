@@ -18,4 +18,11 @@ public interface Icival_repo extends JpaRepository<Icival, IcivalId> {
             "AND AUDTTIME = (SELECT MAX(AUDTTIME) FROM Icival WHERE AUDTDATE = :date AND TRANSTYPE IN (1, 4) AND ITEMNO = i.ITEMNO)",
             nativeQuery = true)
     List<Icival> findByAudtdate(@Param("date") BigDecimal date);
+
+    @Query(value = "SELECT * FROM ICIVAL i " +
+            "WHERE AUDTDATE = (SELECT MAX(AUDTDATE) FROM ICIVAL WHERE TRANSTYPE = 1 AND ITEMNO IN (:docIds)) " +
+            "AND TRANSTYPE IN (1, 4) " +
+            "AND ITEMNO IN (:docIds)",
+            nativeQuery = true)
+    List<Icival> findMostRecentByItemnoAndTransactionType(@Param("docIds") List<String> docIds);
 }

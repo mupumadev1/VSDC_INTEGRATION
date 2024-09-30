@@ -6,14 +6,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.Hibernate;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Objects;
 
 @Getter
 @Setter
 @Embeddable
-public class IcivalId implements java.io.Serializable {
-    private static final long serialVersionUID = -4705648118446003200L;
+public class IcivalId implements Serializable {
+    private static final long serialVersionUID = -3194570392743504370L;
     @Column(name = "ACCTSET", nullable = false, length = 6)
     private String acctset;
 

@@ -3,6 +3,7 @@ package com.example.IMS.entity.mysql;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 
@@ -44,5 +45,9 @@ public class Auditlog {
     @Lob
     @Column(name = "response_message" ,columnDefinition = "LONGTEXT", nullable = false)
     private String responseMessage;
+
+    @ColumnDefault("'A'")
+    @Column(name = "purchaseTransactionType", length = 1)
+    private String purchaseTransactionType;
 
 }

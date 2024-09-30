@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Inventory-Management-System-Spring-Boot-main/IMS-AP.iml" filepath="$PROJECT_DIR$/Inventory-Management-System-Spring-Boot-main/IMS-AP.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/Inventory-Management-System-Spring-Boot-main.iml" filepath="$PROJECT_DIR$/.idea/Inventory-Management-System-Spring-Boot-main.iml" />
     </modules>
   </component>
 </project>

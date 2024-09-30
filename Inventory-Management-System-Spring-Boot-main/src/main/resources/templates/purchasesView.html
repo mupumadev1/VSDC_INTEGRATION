@@ -14,8 +14,9 @@
 			<div class="row">
 				<div class="col d-flex align-items-start">
 					<h2 class="text-center mb-4">Purchases Pending Approval</h2>
+				</div>
 				<div class="col d-flex align-items-end justify-content-end">
-					<form class="form-inline">
+					<!--<form class="form-inline">
 						<div class="input-group">
 							<input class="form-control" type="text" placeholder="Invoice number..."
 								   aria-label="Search" aria-describedby="basic-addon2" />
@@ -25,7 +26,7 @@
 								</button>
 							</div>
 						</div>
-					</form>
+					</form>-->
 				</div>
 			</div>
 			<hr>
@@ -44,8 +45,8 @@
 						<th>Invoice Number</th>
 						<th>Date</th>
 						<th style="text-align: center">Supplier Items</th>
-						<th>Sage Purchase Order</th>
-						<th style="text-align: center">Actions</th>
+						<th>Sage Receipt</th>
+						<th style="text-align: center" >Actions</th>
 					</tr>
 					</thead>
 					<tbody th:if="${#lists.isEmpty(invoices)}">
@@ -54,7 +55,7 @@
 					</tr>
 					</tbody>
 					<tbody >
-					<tr th:each="invoice, iterStat : ${invoices}" id="myTable">
+					<tr th:each="invoice, iterStat : ${invoices}" id="myTable" th:attr="data-invoice=${invoice.spplrInvcNo}">
 						<td th:text="${invoice.spplrTpin}"></td>
 						<td th:text="${invoice.spplrNm}"></td>
 						<td th:text="${invoice.totAmt}"></td>
@@ -63,196 +64,463 @@
 						<td th:text="${invoice.spplrInvcNo}"></td>
 						<td th:text="${invoice.salesDt}"></td>
 						<td>
-							<table class="table table-sm table-bordered" style=" overflow-y: auto;">
+							<table class="table table-sm table-bordered nested-supplier-items" style=" overflow-y: auto;">
 								<thead>
 								<tr>
 									<th>Item Name</th>
+									<th>Item Code</th>
 									<th>Quantity</th>
 									<th>Price</th>
-									<th>Corresponding Sage Item</th>
+									<th>Sage Item</th>
 								</tr>
 								</thead>
 								<tbody>
-								<tr th:each="item : ${invoice.itemList}">
-									<td th:text="${item.itemCd}"></td>
+								<tr th:each="item : ${invoice.itemList}" >
 									<td th:text="${item.itemNm}"></td>
+									<td th:text="${item.itemCd}"></td>
+									<td class="d-none" th:text="${item.itemClsCd}"></td>
 									<td th:text="${item.qty}"></td>
-									<td>
-										<select class="form-control sage-dropdown" name="sageItem" id="sageItem_${item.itemno}">
-											<option value="" disabled selected>Select a Sage item...</option>
-											<!-- Populate dropdown with 'sageItems' -->
-											<option th:each="sageItem : ${sageItems}" th:value="${sageItem.itemno}" th:text="${sageItem.desc}">
-											</option>
-										</select>
-									</td>
+									<td th:text="${item.prc}"></td>
+									<td>  <select class="form-control sage-dropdown" name="sageItem" id="sageItem_${item.id}">
+										<option value="" disabled selected>Select a Sage item...</option>
+
+										<option th:each="sageItem : ${sageItems}" th:value="${sageItem.itemno}" th:text="${sageItem.desc}">
+										</option>
+									</select></td>
+
 								</tr>
 								</tbody>
 							</table>
 
 						</td>
-						<td style="text-align: center" ><button class="btn btn-info" data-toggle="modal" data-target="#purchaseOrderModal" id="purchase-orders">select</button></td>
-
 						<td style="text-align: center">
-							<button class="btn btn-info" id="post-button"   data-po="" onclick="postInvoice(this)" th:attr="data-invoice=${invoice.spplrInvcNo}">Post</button></td>
+							<button class="btn btn-info select-button" th:data-tpin="${invoice.spplrTpin}" th:data-name="${invoice.spplrNm}"  data-toggle="modal" data-target="#purchaseOrderModal" >Select</button>
+						</td>
+						<td style="text-align: center">
+							<div class="d-flex">
+							<button th:class="'btn btn-info post-button'+ ${invoice.spplrInvcNo}" data-po="" th:attr="data-invoice=${invoice.spplrInvcNo}">Approve</button>
+							<button th:class="'btn btn-info ml-1 reject-button'+ ${invoice.spplrInvcNo}" th:attr="data-invoice=${invoice.spplrInvcNo}" data-toggle="modal" data-target="#rejectModal">Reject</button>
+							</div>
+						</td>
+
 					</tr>
 					<!-- Nested table to display related purchase orders -->
 					</tbody>
+
 				</table>
-				<div class="modal fade" id="purchaseOrderModal" tabindex="-1" role="dialog" aria-labelledby="purchaseOrderModalLabel" aria-hidden="true">
-					<div class="modal-dialog modal-xl" role="document">
-						<div class="modal-content">
-							<div class="modal-header">
-								<h5 class="modal-title" id="purchaseOrderModalLabel">Select Related Purchase Orders</h5>
-								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-									<span aria-hidden="true">&times;</span>
-								</button>
-							</div>
-							<div class="modal-body">
-								<!-- Dynamic purchase order details go here -->
-								<div id="modal-content">
-									<table class="table table-sm table-bordered mt-2" style=" width: 100%;table-layout: auto;">
-										<thead>
-										<tr>
-											<th>PO Number</th>
-											<th>Vendor Name</th>
-											<th>Taxable Amount</th>
-											<th>Tax Amount</th>
-											<th>Total Amount</th>
-											<th>Items</th>
-										</tr>
-										</thead>
-										<tbody id="modal-body-content">
-										<tr th:each="po : ${purchaseOrders}">
-											<td th:text="${po.poNumber}"></td>
-											<td th:text="${po.vendorName}"></td>
-											<td th:text="${po.taxableAmount}"></td>
-											<td th:text="${po.tax}"></td>
-											<td th:text="${po.totalAmount}"></td>
-											<td> <table class="table table-sm table-bordered" style=" overflow-y: auto;">
-												<thead>
-												<tr>
-													<th>Item Name</th>
-													<th>Quantity</th>
-													<th>Price</th>
-												</tr>
-												</thead>
-												<tbody>
-												<tr th:each="item : ${po.items}">
-													<td th:text="${item.itemName}"></td>
-													<td th:text="${item.quantity}"></td>
-													<td th:text="${item.price}"></td>
-												</tr>
-												</tbody>
-											</table></td>
-										</tr>
-										</tbody>
-									</table>
+						<div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-labelledby="rejectModalLabel" aria-hidden="true">
+							<div class="modal-dialog d-flex justify-content-center align-items-center" role="document">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title" id="rejectModalLabel">Give reason for rejecting purchase</h5>
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+											<span aria-hidden="true">&times;</span>
+										</button>
+									</div>
+									<div class="modal-body d-flex justify-content-center align-items-center">
+										<!-- Dynamic purchase order details go here -->
+										<div id="reject-modal-content" class="w-100">
+											<form class="d-flex flex-column justify-content-center align-items-center">
+												<input type="text" name="rejectReason" class="input form-control mb-3 w-75">
+												<button type="button" id="save" class="btn btn-info w-50 save">Save</button>
+											</form>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-				</div>
+
+						<div class="modal fade" th:id="purchaseOrderModal" tabindex="-1" role="dialog" aria-labelledby="purchaseOrderModalLabel"  aria-hidden="true">
+							<div class="modal-dialog modal-xl" role="document">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title" id="purchaseOrderModalLabel">Select Related Receipt</h5>
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+											<span aria-hidden="true">&times;</span>
+										</button>
+									</div>
+									<div class="modal-body">
+										<!-- Dynamic purchase order details go here -->
+										<div id="modal-content">
+											<table class="table table-sm table-bordered mt-2" style=" width: 100%;table-layout: auto;">
+												<thead>
+												<tr>
+													<th>Receipt Number</th>
+													<th>Vendor Name</th>
+													<th>Taxable Amount</th>
+													<th>Tax Amount</th>
+													<th>Total Amount</th>
+													<th>Items</th>
+												</tr>
+												</thead>
+												<tbody id="modal-body-content">
+												<tr >
+													<td ></td>
+
+														</tr>
+														</tbody>
+													</table></td>
+												</tr>
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
 					</div>
 			</div>
 		</div>
 	</div>
 </div>
+<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document" >
+		<div class="modal-content mx-auto">
+			<div class="modal-body text-center">
+				<div class="spinner-border" role="status">
+					<span class="sr-only">Loading...</span>
+				</div>
+				<p class="mt-2" id="loadingMessage">Loading, please wait...</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+</div>
 <script>
-	const modalRows = document.querySelectorAll('#purchaseOrderModal tbody tr');
+
 	$(document).ready(function() {
-		// Initialize select2 for all dropdowns
-		$('.sage-dropdown').select2({
-			placeholder: 'Select a Sage item...',
-			allowClear: true
-		});
-	});
+		const popUp = document.getElementById('loadStandardCodes')
+		if (popUp) {
+			popUp.addEventListener('click', function (e) {
+				e.preventDefault();
+				let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+				let loadingMessage = document.getElementById('loadingMessage');
+				loadingModal.show();
+				fetch('http://localhost:8086/create-packaging-unit')
+						.then(response => response.json())
+						.then(data => {
+							// Handle the response (if needed)
+							loadingMessage.textContent = data.message
+							setTimeout(() => {
+								loadingModal.hide();
+							}, 2000);
+						})
+						.catch(error => {
+							// Handle errors (if needed)
+							console.error(error);
 
+							// Hide the loading modal
+							loadingModal.hide();
+						});
 
-	// Add click event listener to each row
-	modalRows.forEach(row => {
-		row.addEventListener('click', () => {
-			// Get the selected PO number
-			const poNumber = row.querySelector('td:first-child').textContent;
-
-			// Update the button text with the selected PO number
-			const selectButton = document.getElementById('purchase-orders');
-			selectButton.textContent = poNumber;
-
-			const postButton = document.getElementById('post-button');
-			postButton.setAttribute('data-po', poNumber);
-
-			// Close the modal
-			$('#purchaseOrderModal').modal('hide');
-		});
-	});
-	function postInvoice(button) {
-		// Get the invoice number from the button's data attribute
-		const invoiceNumber = button.getAttribute('data-invoice');
-
-		// Get the PO number from the button's data attribute
-		const poNumber = button.getAttribute('data-po');
-		if (!poNumber) {
-			console.log('PO Number is not set. Please select a purchase order.');
-			alert('Please select a purchase order before posting.'); // Alert the user
-			return; // Exit the function if PO number is not set
+			})
 		}
+		// Initialize select2 for all dropdowns
+		$(document).on('click', '[class*="btn btn-info ml-1 reject-button"]', function() {
+			// Get the current row of the clicked Post button
+			let currentRow = $(this).closest('tr');
+			let modalId = $(this).data('target');
+			let invoiceNumber = $(this).data('invoice');
+			$(modalId).modal('show');
 
-		const itemRows = button.closest('tr').querySelectorAll('table.table-sm tbody tr');
-		const itemDetails = [];
+			$('[class*="btn btn-info w-50 save"]').on('click', function () {
+				let remark = $(modalId).find('input[name="rejectReason"]').val();
+				// Check if the remark is null or an empty string
+				if (!remark) {
+					alert('Please provide a reason for rejection.');
+					return; // Exit the function if remark is empty
+				}
 
-		// Check if all Sage items are selected
-		let allSageItemsSelected = true;
-		itemRows.forEach(row => {
-			const itemCd = row.querySelector('td:first-child').textContent; // Get itemCd
-			const sageDropdown = row.querySelector('.sage-dropdown');
-			const sageItemCode = sageDropdown ? sageDropdown.value : '';
+				 // Invoice Number
 
-			if (!sageItemCode) {
-				allSageItemsSelected = false;
+				const postData = {
+
+					invoiceNumber: invoiceNumber,
+					remark: remark
+					// Include array of selected Sage items
+				};
+
+				console.log('Data to be posted:', postData); // Log the object for debugging
+
+				// Here you can send `postData` to your backend using AJAX or fetch API
+				$.ajax({
+					url: `/post-po-to-sage-reject`, // Replace with your backend endpoint URL
+					method: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify(postData),
+					success: function (response) {
+						console.log('Data posted successfully:', response);
+						alert('Data posted successfully!');
+						window.location.reload()
+						// Optionally, handle success (e.g., refresh table, close modal)
+					},
+					error: function (xhr, status, error) {
+						console.error('Error posting data:', error);
+						alert('An error occurred while posting data.');
+
+						// Optionally, handle error (e.g., show error message)
+					}
+				});
+			});
+		})
+
+		$(document).on('click', '[class*="btn btn-info post-button"]', function() {
+			// Get the current row of the clicked Post button
+			let currentRow = $(this).closest('tr');
+
+			// Retrieve the supplier information
+			let supplierTpin = currentRow.find('td:nth-child(1)').text(); // Supplier TPIN
+			let supplierName = currentRow.find('td:nth-child(2)').text(); // Supplier Name
+			let invoiceNumber = $(this).data("invoice") // Invoice Number
+			console.log(supplierName,supplierTpin)
+			// Get the PO number from the selected button's text content
+			let poNumber = $(selectedButton).text(); // Retrieve the PO number from the selected button
+			if (!poNumber) {
+				alert('Please select a Sage receipt before posting.');
+				return;
 			}
 
-			// Store itemCd and sageItemCode in the array
-			itemDetails.push({ itemCd, sageItemCode });
+			// Check if the user has selected a Sage item from the nested table
+			let sageItems = []; // Array to hold selected Sage items
+
+
+			// Get the selected value (item number)
+
+
+
+				// Loop through the nested table rows to check for selected Sage items
+				currentRow.find('.nested-supplier-items tbody tr').each(function () {
+					let itemName = $(this).find('td:nth-child(1)').text(); // Item Name
+					let itemCode = $(this).find('td:nth-child(2)').text(); // Item Code
+					let itemClassCode = $(this).find('td:nth-child(3)').text(); // Item Code
+					let selectElement = $(this).find('.sage-dropdown').val();
+					sageItems.push({
+						sageItem: selectElement,
+						itemName: itemName,
+						itemCode: itemCode,
+						itemClassCode: itemClassCode
+					});
+				});
+
+
+			// Validate that at least one Sage item is selected
+			if (sageItems.length === 0) {
+				alert("Please select at least one Sage item.");
+				return; // Exit if no items are selected
+			}
+
+			// Create an object to send to the backend
+			const postData = {
+				supplierTpin: supplierTpin,
+				supplierName: supplierName,
+				invoiceNumber: invoiceNumber,
+				poNumber: poNumber,
+				sageItems:sageItems,
+			};
+
+			console.log('Data to be posted:', postData); // Log the object for debugging
+
+			// Here you can send `postData` to your backend using AJAX or fetch API
+			$.ajax({
+				url : `/post-po-to-sage`, // Replace with your backend endpoint URL
+				method: 'POST',
+				contentType: 'application/json',
+				data: JSON.stringify(postData),
+				success: function(response) {
+					console.log('Data posted successfully:', response);
+					alert('Data posted successfully!');
+					// Optionally, handle success (e.g., refresh table, close modal)
+				},
+				error: function(xhr, status, error) {
+					console.error('Error posting data:', error);
+					alert('An error occurred while posting data.');
+					// Optionally, handle error (e.g., show error message)
+				}
+			});
 		});
 
-		if (!allSageItemsSelected) {
-			console.log('Not all Sage items are selected.');
-			alert('Please select a Sage item for each invoice item before posting.'); // Alert the user
-			return; // Exit the function if any Sage item is not selected
-		}
 
-		// Log the invoice and PO number to the console
-		console.log('Invoice Number:', invoiceNumber);
-		console.log('PO Number:', poNumber);
-		console.log(itemDetails)
+	let selectedButton;
+	let selectElement ;
+	let selectedPost;
 
-		const url = `/post-po-to-sage`;
-		fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
+	$('[class*="btn btn-info select-button"]').on('click', function() {
+		selectedButton = this;
+		selectElement = $(selectedButton).closest('tr').find('select.sage-dropdown')
+		selectedPost = $(selectedButton).closest('tr').find('button.post-button')
+
+		// Get the supplier TPIN and supplier name from the clicked button's data attributes
+		let tpin = $(this).data('tpin');
+		let supplierName = $(this).data('name');
+		let modalId = $(this).data('target');
+
+		// Make an AJAX request to the backend
+		$.ajax({
+			url: '/api/purchaseOrders', // Adjust the URL to your backend endpoint
+			method: 'GET',
+			data: {
+				supplierTpin: tpin,
+				supplierName: supplierName // Send the supplier name as a query parameter
 			},
-			body: JSON.stringify({
-				invnumber: parseInt(invoiceNumber, 10), // Ensure it's an integer
-				po_number: poNumber,
-				item_details: itemDetails // This should now be an array of objects
-			})
-		})
-				.then(response => {
-					if (!response.ok) {
-						throw new Error('Network response was not ok ' + response.statusText);
-					}
-					return response.text(); // or response.json() if the response is JSON
-				})
-				.then(data => {
-					console.log('Success:', data);
-					alert('Purchase order posted successfully!'); // Notify the user of success
-				})
-				.catch(error => {
-					console.error('Error:', error);
-					alert('Failed to post purchase order: ' + error.message); // Notify the user of failure
+			success: function(response) {
+				// Clear previous content in the modal body
+				$('#modal-body-content').empty();
+
+				// Check if there are purchase orders
+				if (response && response.length > 0) {
+					// Populate the modal with the purchase orders
+					response.forEach(function(po) {
+						let row = `
+                            <tr>
+                                <td>${po.poNumber}</td>
+                                <td>${po.vendorName}</td>
+                                <td>${po.taxableAmount}</td>
+                                <td>${po.tax}</td>
+                                <td>${po.totalAmount}</td>
+                                <td>
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th>Item Code</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+						po.items.forEach(function(item) {
+							row += `
+                                <tr class="nested-content">
+                                    <td>${item.itemName}</td>
+                                    <td>${item.itemCode}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>${item.price}</td>
+                                </tr>
+                            `;
+						});
+						row += `
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        `;
+						$('#modal-body-content').append(row);
+					});
+					addPOEventListener();
+				} else {
+					// Handle case where no purchase orders are found
+					$('#modal-body-content').append('<tr><td colspan="6">No purchase orders found.</td></tr>');
+				}
+
+				// Show the modal
+				$(modalId).modal('show');
+			},
+			error: function(xhr, status, error) {
+				console.error('Error fetching purchase orders:', error);
+				// Optionally, show an error message in the modal
+				$('#modal-body-content').empty().append('<tr><td colspan="6">Error fetching purchase orders.</td></tr>');
+				$(modalId).modal('show');
+			}
+		});
+	});
+	function addPOEventListener() {
+		let poNumber = "";
+
+		// Add click event listener to each row in the modal
+		const modalRows = document.querySelectorAll('#modal-body-content tr');
+		modalRows.forEach(row => {
+			row.addEventListener('click', () => {
+				// Get the selected PO number
+
+				let newSelect = $('<select>')
+						.addClass('form-control sage-dropdown')
+						.attr('name', 'sageItem')
+						.append(
+								$('<option>')
+										.attr('value', '')
+										.attr('disabled', true)
+										.attr('selected', true)
+										.text('Select a Sage item...')
+						);
+				// Get the nested table in the clicked row
+				let nestedTables = row.querySelectorAll('.table.table-sm.table-bordered');
+
+				// Check if the nested table is found
+				if (nestedTables.length === 0) {
+					console.error('Nested table not found.');
+					return; // Exit if the nested table is not found
+				}
+				nestedTables.forEach(nestedTable => {
+					// Get all rows inside the nested table's tbody
+					let nestedRows = nestedTable.querySelectorAll('tbody tr .nested-content');
+					console.log(nestedRows)
+					// Iterate over each row in the nested table
+					nestedRows.forEach(nestedRow => {
+						let itemName = nestedRow.querySelector('td:first-child').textContent; // Get the item name
+						let itemCode = nestedRow.querySelector('td:nth-child(2)').textContent; // Get the item code
+
+
+						// Create a new option element and append it to the select element
+						newSelect.append(
+								$('<option>')
+										.attr('value', itemName)
+										.text(itemName)
+						); // Append the new option to the select element
+					});
 				});
+				// Populate the select element with the item names and codes from the nested table
+				// Log
+				// Replace the existing select element in the original table with the new one
+				if (selectElement) {
+					selectElement.replaceWith(newSelect);
+				}
+
+				poNumber = row.querySelector('td:first-child').textContent;
+				if (selectedButton) {
+					$(selectedButton).text(poNumber); // Update the button text
+				}
+				if (selectedPost) {
+					$(selectedPost).data('po', poNumber);
+				}
+
+
+				// Close the modal
+				$('#purchaseOrderModal').modal('hide');
+			});
+		});
+
 	}
+	})
+	const popUp = document.getElementById('loadStandardCodes')
+	if (popUp) {
+		popUp.addEventListener('click', function (e) {
+			e.preventDefault();
+			let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+			let loadingMessage = document.getElementById('loadingMessage');
+			loadingModal.show();
+			fetch('http://localhost:8086/create-packaging-unit')
+					.then(response => response.json())
+					.then(data => {
+						// Handle the response (if needed)
+						loadingMessage.textContent = data.message
+						setTimeout(() => {
+							loadingModal.hide();
+						}, 2000);
+					})
+					.catch(error => {
+						// Handle errors (if needed)
+						console.error(error);
+
+						// Hide the loading modal
+						loadingModal.hide();
+					});
+
+		})
+	}
+
 </script>
 </body>
 </html>

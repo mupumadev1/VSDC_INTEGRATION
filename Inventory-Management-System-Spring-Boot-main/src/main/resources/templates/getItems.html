@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <div th:replace="header :: myHeader"></div>
+</head>
+<body class="sb-nav-fixed">
+<div th:replace="navbar :: myNavbar"></div>
+<div id="layoutSidenav">
+    <div th:replace="sidebar :: mySidebar"></div>
+
+    <div id="layoutSidenav_content">
+        <div class="container">
+            <br>
+            <hr>
+
+            <!-- Add a row with a column to position the form -->
+            <div class="row">
+                <div class="col d-flex align-items-start">
+                    <h2 class="text-center m-4">Item Information</h2>
+                </div>
+                <div class="col d-flex align-items-end justify-content-end">
+                   <!-- <form class="form-inline" th:action="@{/imports}" method="post" >
+                        <div class="input-group">
+                            <input class="form-control" name="refNumber" id="refNumber" type="text" th:data-refNumber ="refNo" th:placeholder="${refNo}"
+                                   aria-label="Search" aria-describedby="basic-addon2" />
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit" id="import-submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>-->
+                </div>
+            </div>
+
+            <br><br>
+
+            <div class="table-responsive">
+
+
+                <table class="table table-bordered table-hover">
+                    <thead>
+                    <tr>
+                        <th>TPIN</th>
+                        <th>Item Code</th>
+                        <th>Item Class Code</th>
+                        <th>Item Type Code</th>
+                        <th>Item Name</th>
+                        <th>Standard Item Name</th>
+                        <th>Origin Nation Code</th>
+                        <th>Package Unit Code</th>
+                        <th>Quantity Unit Code</th>
+                        <th>VAT Category Code</th>
+                        <th>Batch Number</th>
+                        <th>Registered Branch ID</th>
+                        <th>Barcode</th>
+                        <th>Default Price</th>
+                        <th>Safety Quantity</th>
+                        <th>ISRC Applicable Y/N</th>
+                        <th>Use Y/N</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Iterate over itemList from the model -->
+                    <tr th:each="item : ${itemList}">
+                        <td th:text="${item.tpin}"></td>
+                        <td th:text="${item.itemCd}"></td>
+                        <td th:text="${item.itemClsCd}"></td>
+                        <td th:text="${item.itemTyCd}"></td>
+                        <td th:text="${item.itemNm}"></td>
+                        <td th:text="${item.itemStdNm}"></td>
+                        <td th:text="${item.orgnNatCd}"></td>
+                        <td th:text="${item.pkgUnitCd}"></td>
+                        <td th:text="${item.qtyUnitCd}"></td>
+                        <td th:text="${item.vatCatCd}"></td>
+                        <td th:text="${item.btchNo}"></td>
+                        <td th:text="${item.regBhfId}"></td>
+                        <td th:text="${item.bcd}"></td>
+                        <td th:text="${item.dftPrc}"></td>
+                        <td th:text="${item.sftyQty}"></td>
+                        <td th:text="${item.isrcAplcbYn}"></td>
+                        <td th:text="${item.useYn}"></td>
+
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    const popUp = document.getElementById('loadStandardCodes')
+    if (popUp) {
+        popUp.addEventListener('click', function (e) {
+            e.preventDefault();
+            let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+            let loadingMessage = document.getElementById('loadingMessage');
+            loadingModal.show();
+            fetch('http://localhost:8086/create-packaging-unit')
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response (if needed)
+                    loadingMessage.textContent = data.message
+                    setTimeout(() => {
+                        loadingModal.hide();
+                    }, 2000);
+                })
+                .catch(error => {
+                    // Handle errors (if needed)
+                    console.error(error);
+
+                    // Hide the loading modal
+                    loadingModal.hide();
+                });
+
+        })
+    }
+</script>
+</body>
+</html>
